@@ -6,5 +6,5 @@ import org.springframework.stereotype.Repository;
 import za.co.dubedivine.networks.model.Tag;
 
 @Repository
-public interface TagRepository extends MongoRepository<Tag, String>, QueryDslPredicateExecutor<Tag> {
+public interface TagRepository extends MongoRepository<Tag, String> {
 }
