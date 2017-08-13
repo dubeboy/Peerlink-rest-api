@@ -18,25 +18,16 @@ import java.util.List;
 
 
 //@QueryEntity what is this
-@Document
 public class Tag {
-    @Id
-    private String id;
     private String name;
-    @Indexed
-    private List<Question> questions;
     private Date createAt = new Date();
 
-    public String getId() {
-        return id;
+    public Tag(String name) {
+        this.name = name;
     }
 
     public String getName() {
         return name;
-    }
-
-    public List<Question> getQuestions() {
-        return questions;
     }
 
     public Date getCreateAt() {

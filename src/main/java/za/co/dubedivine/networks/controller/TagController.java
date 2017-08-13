@@ -1,8 +1,9 @@
 package za.co.dubedivine.networks.controller;
 
 import org.springframework.web.bind.annotation.*;
+import za.co.dubedivine.networks.model.Question;
 import za.co.dubedivine.networks.model.Tag;
-import za.co.dubedivine.networks.model.repository.TagRepository;
+import za.co.dubedivine.networks.model.repository.QuestionRepository;
 
 import java.util.List;
 
@@ -13,25 +14,25 @@ import java.util.List;
 @RequestMapping("/tags")
 public class TagController {
 
-    private TagRepository tagRepository;
+    private QuestionRepository tagRepository;
 
-    public TagController(TagRepository tagRepository) {
+    public TagController(QuestionRepository tagRepository) {
         this.tagRepository = tagRepository;
     }
 
     @GetMapping("/all")
-    public List<Tag> getAll() {
-        List<Tag> tags = this.tagRepository.findAll();
+    public List<Question> getAll() {
+        List<Question> tags = this.tagRepository.findAll();
         return tags;
     }
 
     @PutMapping
-    public void insert(@RequestBody Tag tag) {
+    public void insert(@RequestBody Question tag) {
         this.tagRepository.insert(tag);
     }
 
     @PostMapping
-    public void update(@RequestBody Tag tag) {
+    public void update(@RequestBody Question tag) {
         tagRepository.save(tag);
     }
 

@@ -12,4 +12,13 @@ public class Video {
     private String location;
     private int limit = 5 * 1024; //5 mb
     private Date createAt = new Date();
+
+
+    public Video(String name, int size, String type, String location, int limit) {
+        this.name = name;
+        this.size = size;
+        this.type = type;
+        this.location = location;
+        this.limit = limit;
+    }
 }

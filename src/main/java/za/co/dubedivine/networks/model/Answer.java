@@ -14,6 +14,12 @@ public class Answer {
     private List<Comment> comments;
     private Video video;
 
+    public Answer(String body, long votes, boolean isChoosens) {
+        this.body = body;
+        this.votes = votes;
+        this.isChoosen = isChoosen;
+    }
+
     public String getBody() {
         return body;
     }
