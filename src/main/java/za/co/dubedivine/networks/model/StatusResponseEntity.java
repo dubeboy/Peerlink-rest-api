@@ -9,6 +9,10 @@ public class StatusResponseEntity {
         this.message = message;
     }
 
+    public boolean isStatus() {
+        return status;
+    }
+
     public String getMessage() {
         return message;
     }
