@@ -1,22 +1,20 @@
 package za.co.dubedivine.networks.controller;
 
-import com.querydsl.core.types.dsl.BooleanExpression;
 import org.springframework.data.domain.Sort;
-import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
-import za.co.dubedivine.networks.model.Answer;
-import za.co.dubedivine.networks.model.Comment;
-import za.co.dubedivine.networks.model.QQuestion;
-import za.co.dubedivine.networks.model.Question;
+import za.co.dubedivine.networks.model.*;
 import za.co.dubedivine.networks.model.repository.QuestionRepository;
 
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
+
+//todo: handling invalid data an dublicate data
+//todo: split tags and questions
 
 @RestController
 @RequestMapping("questions")
@@ -55,16 +53,25 @@ public class QuestionsController {
        repository.save(question);
     }
 
-    @PutMapping("/answer/{q_id}")
-    public void addAnswer(@PathVariable("q_id") String questionId, @RequestBody Answer answer) {   // could also take in the the whole question
+    @PutMapping("/{q_id}/answer")  // questions/1/answer
+    public ResponseEntity<StatusResponseEntity> addAnswer(@PathVariable("q_id") String questionId, @RequestBody Answer answer) {   // could also take in the the whole question
         Question question = repository.findOne(questionId);
-        ArrayList<Answer> answers = new ArrayList<>();
-        answers.add(answer);
-        question.setAnswers(answers);
-        repository.save(question);
+        StatusResponseEntity statusResponseEntity;
+        if (question == null) {
+            statusResponseEntity = new StatusResponseEntity(false, "the question you are trying to update does not exist");
+            return new ResponseEntity<>(statusResponseEntity, HttpStatus.BAD_REQUEST);
+        } else {
+            ArrayList<Answer> answers = new ArrayList<>();
+            answers.add(answer);
+            question.setAnswers(answers);
+            repository.save(question);
+            statusResponseEntity = new StatusResponseEntity(true, "Successfully added a new answer to this question");
+            return new ResponseEntity<>(statusResponseEntity, HttpStatus.BAD_REQUEST);
+
+        }
     }
 
-    @PutMapping("/commentItSS/{q_id}")
+    @PutMapping("/{q_id}/comment") // // questions/1/comment
     public void addComment(@PathVariable("q_id") String questionId, @RequestBody Comment comment) {
         Question question = repository.findOne(questionId);
         ArrayList<Comment> comments = new ArrayList<>();
@@ -73,7 +80,7 @@ public class QuestionsController {
         repository.save(question);
     }
 
-    @DeleteMapping("/{q_id}")
+    @DeleteMapping("/{q_id}")  //questions/2
     public void deleteQuestion(@PathVariable("q_id") String questionId) {
         //todo: should actually have another collection called deleted stuff where we move this stuff to
         repository.delete(questionId);
