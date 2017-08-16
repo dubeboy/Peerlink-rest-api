@@ -27,7 +27,7 @@ public class Question {
     private Video video;
     private String type;
     private List<Docs> docs;
-    private Date createAt = new Date();
+    private Date createdAt = new Date();
 
 
     public Question(String title, String body, long votes, List<Tag> tags, String type) {
@@ -84,12 +84,12 @@ public class Question {
         return docs;
     }
 
-    public Date getCreateAt() {
-        return createAt;
+    public Date getCreatedAt() {
+        return createdAt;
     }
 
-    public void setCreateAt(Date createAt) {
-        this.createAt = createAt;
+    public void setCreatedAt(Date createdAt) {
+        this.createdAt = createdAt;
     }
 
     public void setComments(List<Comment> comments) {

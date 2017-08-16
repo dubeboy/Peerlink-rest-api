@@ -1,5 +1,8 @@
 package za.co.dubedivine.networks.controller;
 
+import com.querydsl.core.types.dsl.BooleanExpression;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -7,6 +10,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import za.co.dubedivine.networks.model.Answer;
 import za.co.dubedivine.networks.model.Comment;
+import za.co.dubedivine.networks.model.QQuestion;
 import za.co.dubedivine.networks.model.Question;
 import za.co.dubedivine.networks.model.repository.QuestionRepository;
 
@@ -20,6 +24,8 @@ public class QuestionsController {
 
     private final QuestionRepository repository;
 
+
+    // todo: make pageable offset etc
     public QuestionsController(QuestionRepository questionRepository) {
         this.repository = questionRepository;
     }
@@ -28,7 +34,8 @@ public class QuestionsController {
 
     @GetMapping
     public List<Question> getAllQuestions() {
-        return repository.findAll();
+        Sort sort = new Sort(Sort.Direction.DESC, "createdAt");
+        return repository.findAll(sort);
     }
 
     @PutMapping  //adding anew entity
