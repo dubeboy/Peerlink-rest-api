@@ -14,10 +14,21 @@ public class Answer {
     private List<Comment> comments;
     private Video video;
 
-    public Answer(String body, long votes, boolean isChoosens) {
+    public Answer() {
+    }
+
+    public Answer(String body, long votes, boolean isChoosen) {
         this.body = body;
         this.votes = votes;
         this.isChoosen = isChoosen;
+    }
+
+    public Answer(String body, long votes, boolean isChosen, List<Comment> comments, Video video) {
+        this.body = body;
+        this.votes = votes;
+        this.isChoosen = isChosen;
+        this.comments = comments;
+        this.video = video;
     }
 
     public String getBody() {

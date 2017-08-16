@@ -10,16 +10,18 @@ public class Docs {
     private int size;
     private String type;
     private String location;
-    private int limit = 5 * 1024; //5 mb
     private Date createAt = new Date();
 
 
-    public Docs(String name, int size, String type, String location, int limit) {
+    public Docs() {
+
+    }
+
+    public Docs(String name, int size, String type, String location) {
         this.name = name;
         this.size = size;
         this.type = type;
         this.location = location;
-        this.limit = limit;
     }
 
     public String getName() {
@@ -39,7 +41,7 @@ public class Docs {
     }
 
     public int getLimit() {
-        return limit;
+        return 5120; // 5 mb
     }
 
     public Date getCreateAt() {

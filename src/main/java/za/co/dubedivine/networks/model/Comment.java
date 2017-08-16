@@ -10,11 +10,14 @@ public class Comment {
     private long votes;
     private Date createdAt = new Date();
 
+
+    public Comment() {
+    }
+
     public Comment(String body, long votes) {
         this.body = body;
         this.votes = votes;
     }
-
     public String getBody() {
         return body;
     }

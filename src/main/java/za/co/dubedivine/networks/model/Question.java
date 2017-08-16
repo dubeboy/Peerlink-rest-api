@@ -15,7 +15,7 @@ import java.util.List;
 public class Question {
     @Id
     private String id;
-
+//    @Indexed  //todo: should somehow be able to search fast with title and body
     private String title;
     private String body;
     private long votes;
@@ -38,6 +38,10 @@ public class Question {
         this.type = type;
     }
 
+
+    public Question() { // for jackson man
+
+    }
     //for video we will add another constructor which has video here
 
     public String getId() {

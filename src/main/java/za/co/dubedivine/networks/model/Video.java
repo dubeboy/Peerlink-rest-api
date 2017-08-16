@@ -10,15 +10,36 @@ public class Video {
     private int size;
     private String type;
     private String location;
-    private int limit = 5 * 1024; //5 mb
     private Date createAt = new Date();
 
+    public String getName() {
+        return name;
+    }
 
-    public Video(String name, int size, String type, String location, int limit) {
+    public int getSize() {
+        return size;
+    }
+
+    public String getType() {
+        return type;
+    }
+
+    public String getLocation() {
+        return location;
+    }
+
+    public int getLimit() {
+        return 5120;
+    }
+
+    public Date getCreateAt() {
+        return createAt;
+    }
+
+    public Video(String name, int size, String type, String location) {
         this.name = name;
         this.size = size;
         this.type = type;
         this.location = location;
-        this.limit = limit;
     }
 }

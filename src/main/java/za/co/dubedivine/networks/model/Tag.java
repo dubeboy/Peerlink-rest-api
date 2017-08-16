@@ -22,6 +22,9 @@ public class Tag {
     private String name;
     private Date createAt = new Date();
 
+    public Tag() {
+    }
+
     public Tag(String name) {
         this.name = name;
     }
