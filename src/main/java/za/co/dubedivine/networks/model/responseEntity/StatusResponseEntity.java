@@ -1,4 +1,4 @@
-package za.co.dubedivine.networks.model;
+package za.co.dubedivine.networks.model.responseEntity;
 
 public class StatusResponseEntity {
     private boolean status;

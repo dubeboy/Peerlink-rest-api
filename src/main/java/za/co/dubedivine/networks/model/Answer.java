@@ -1,5 +1,7 @@
 package za.co.dubedivine.networks.model;
 
+import org.springframework.data.annotation.Id;
+
 import java.util.Date;
 import java.util.List;
 
@@ -13,6 +15,7 @@ public class Answer {
     private Date createAt = new Date();
     private List<Comment> comments;
     private Video video;
+    private long id = System.currentTimeMillis();
 
     public Answer() {
     }
@@ -53,5 +56,9 @@ public class Answer {
 
     public Video getVideo() {
         return video;
+    }
+
+    public long getId() {
+        return id;
     }
 }

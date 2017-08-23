@@ -18,7 +18,10 @@ import java.util.List;
 
 
 //@QueryEntity what is this
+@Document
 public class Tag {
+    @Id
+    private String id;
     private String name;
     private Date createAt = new Date();
 
@@ -35,5 +38,13 @@ public class Tag {
 
     public Date getCreateAt() {
         return createAt;
+    }
+
+    public void setId(String id) {
+        this.id = id;
+    }
+
+    public String getId() {
+        return id;
     }
 }

@@ -1,15 +1,30 @@
 package za.co.dubedivine.networks.controller
 
+import com.mongodb.BasicDBObject
+import com.mongodb.DB
+import com.mongodb.DBObject
+import com.mongodb.MongoClient
+import com.mongodb.client.MongoDatabase
+import com.mongodb.client.gridfs.GridFSBucket
+import com.mongodb.client.gridfs.GridFSBuckets
+import com.mongodb.client.gridfs.model.GridFSUploadOptions
+import com.mongodb.gridfs.GridFS
+import com.mongodb.gridfs.GridFSInputFile
+import org.bson.Document
 import org.springframework.data.domain.Sort
+import org.springframework.data.mongodb.core.MongoTemplate
+import org.springframework.data.mongodb.gridfs.GridFsOperations
 import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
+import org.springframework.web.multipart.MultipartFile
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder
 import za.co.dubedivine.networks.model.*
 import za.co.dubedivine.networks.model.repository.QuestionRepository
+import za.co.dubedivine.networks.model.repository.TagRepository
+import za.co.dubedivine.networks.model.responseEntity.StatusResponseEntity
 
-import java.net.URI
 import java.util.ArrayList
 
 //todo: handling invalid data an dublicate data
@@ -17,7 +32,8 @@ import java.util.ArrayList
 // todo: make pageable offset etc
 @RestController
 @RequestMapping("questions")
-class QuestionsController(private val repository: QuestionRepository) {
+class QuestionsController(private val repository: QuestionRepository,
+                          private val tagRepository: TagRepository) {
 
     //TODO: Google post vs put
     val allQuestions: List<Question>
@@ -29,12 +45,20 @@ class QuestionsController(private val repository: QuestionRepository) {
 
     @PutMapping //adding anew entity
     fun addQuestion(@RequestBody question: Question): ResponseEntity<Any> {
-        println("hello there we here bro")
+        question.tags.forEach {
+            val tag = Tag(it.name)
+            val savedTag = tagRepository.save(tag)
+
+            it.id = savedTag.id
+
+        }
         repository.insert(question)
-        val uri = ServletUriComponentsBuilder.fromCurrentRequest().path("/{id}").buildAndExpand(question.id).toUri()
+        val uri = ServletUriComponentsBuilder
+                .fromCurrentRequest()
+                .path("/{id}")
+                .buildAndExpand(question.id).toUri()
         val httpHeaders = HttpHeaders()
         httpHeaders.location = uri
-        println("hello there we here bro 6555555")
 
         return ResponseEntity<Any>(null, httpHeaders, HttpStatus.CREATED)
     }
@@ -44,38 +68,32 @@ class QuestionsController(private val repository: QuestionRepository) {
         repository.save(question)
     }
 
-    @PutMapping("/{q_id}/answer") // questions/1/answer
-    fun addAnswer(@PathVariable("q_id") questionId: String, @RequestBody answer: Answer): ResponseEntity<StatusResponseEntity> {   // could also take in the the whole question
+    @PostMapping("/{q_id}/files")
+    fun addFiles(@PathVariable("q_id") questionId: String,
+                 @RequestParam("file") file: MultipartFile): ResponseEntity<StatusResponseEntity> {
         val question = repository.findOne(questionId)
-        val statusResponseEntity: StatusResponseEntity
-        return if (question == null) {
-            statusResponseEntity = StatusResponseEntity(false, "the question you are trying to update does not exist")
-            ResponseEntity(statusResponseEntity, HttpStatus.BAD_REQUEST)
-        } else {
-            // todo: can be done better dwag
-            val answers: ArrayList<Answer> = if (question.answers != null) {
-                ArrayList(question.answers)
-            } else {
-                ArrayList()
-            }
+        if ((question) != null) {
+            //todo: i gues this code is bad because it open a nother connection it was not supposed to do that!!
+            val mongo = MongoClient("localhost", 27017)
+            val db: DB = mongo.getDB("NetworksDb")
+            val fs = GridFS(db)
+            val metaData = BasicDBObject()
+            metaData.put("q_id", questionId)
+            println("the bucket name is:  ${fs.bucketName} and the db:  ${fs.db}")
+            val createFile: GridFSInputFile = fs.createFile(file.inputStream, file.originalFilename)
+            createFile.save()
+            val id = createFile.id
+            println("the is of the file is: $id")
+            question.video = Video(createFile.filename, createFile.length, createFile.contentType, createFile.id.toString())
+            return ResponseEntity(StatusResponseEntity(true, "file created"), HttpStatus.CREATED)
 
-            answers.add(answer)
-            question.answers = answers
-            repository.save(question)
-            statusResponseEntity = StatusResponseEntity(true, "Successfully added a new answer to this question")
-            ResponseEntity(statusResponseEntity, HttpStatus.CREATED)
+        } else {
+            return ResponseEntity(StatusResponseEntity(true,
+                    "sorry could not create file"), HttpStatus.CREATED)
 
         }
     }
 
-    @PutMapping("/{q_id}/comment") // // questions/1/comment
-    fun addComment(@PathVariable("q_id") questionId: String, @RequestBody comment: Comment) {
-        val question = repository.findOne(questionId)
-        val comments = ArrayList<Comment>()
-        comments.add(comment)
-        question.comments = comments
-        repository.save(question)
-    }
 
     @DeleteMapping("/{q_id}") //questions/2
     fun deleteQuestion(@PathVariable("q_id") questionId: String) {

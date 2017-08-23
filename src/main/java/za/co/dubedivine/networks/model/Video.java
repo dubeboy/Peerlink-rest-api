@@ -7,7 +7,7 @@ import java.util.Date;
  */
 public class Video {
     private String name;
-    private int size;
+    private long size;
     private String type;
     private String location;
     private Date createAt = new Date();
@@ -16,7 +16,7 @@ public class Video {
         return name;
     }
 
-    public int getSize() {
+    public long getSize() {
         return size;
     }
 
@@ -36,7 +36,7 @@ public class Video {
         return createAt;
     }
 
-    public Video(String name, int size, String type, String location) {
+    public Video(String name, long size, String type, String location) {
         this.name = name;
         this.size = size;
         this.type = type;
