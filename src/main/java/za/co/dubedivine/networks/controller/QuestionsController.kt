@@ -1,13 +1,18 @@
 package za.co.dubedivine.networks.controller
 
-import com.mongodb.BasicDBObject
 import com.mongodb.DB
 import com.mongodb.MongoClient
 import com.mongodb.gridfs.GridFS
+import com.mongodb.gridfs.GridFSDBFile
 import com.mongodb.gridfs.GridFSInputFile
+import org.bson.types.ObjectId
+import org.springframework.core.io.ByteArrayResource
+import org.springframework.core.io.InputStreamResource
+import org.springframework.core.io.Resource
 import org.springframework.data.domain.Sort
 import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpStatus
+import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 import org.springframework.web.multipart.MultipartFile
@@ -16,8 +21,10 @@ import za.co.dubedivine.networks.model.*
 import za.co.dubedivine.networks.model.repository.QuestionRepository
 import za.co.dubedivine.networks.model.repository.TagRepository
 import za.co.dubedivine.networks.model.responseEntity.StatusResponseEntity
-
-import java.util.ArrayList
+import java.nio.file.Path
+import java.nio.file.Paths
+import java.util.*
+import javax.xml.ws.Response
 
 //todo: handling invalid data an dublicate data
 //todo: split tags and questions
@@ -71,23 +78,19 @@ class QuestionsController(private val repository: QuestionRepository,
         if ((question) != null) {
             //todo: i gues this code is bad because it open a nother connection it was not supposed to do that!!
 
-            val mongo = MongoClient("localhost", 27017)
-            val db: DB = mongo.getDB("NetworksDb") // ahh its even deprecated!!!
-            val fs = GridFS(db)
-            val metaData = BasicDBObject()
+            val fs = getGridFSInstance()
 
-            metaData.put("q_id", questionId)
             println("the bucket name is:  ${fs.bucketName} and the db:  ${fs.db}")
-            if (files.size == 1) {
+            if (files.size == 1 ) {  //not the best way of checking, but i know the client will restrict this
                 val createFile: GridFSInputFile = fs.createFile(
                         files[0].inputStream,
-                        files[0].originalFilename,
+                        questionId, //sae it with the question ID
                         true)
                 createFile.save()
                 val id = createFile.id
                 println("the is of the file is: $id")
                 question.video = Media(
-                        createFile.filename,
+                        files[0].originalFilename,
                         createFile.length,
                         createFile.contentType,
                         createFile.id.toString())
@@ -99,11 +102,12 @@ class QuestionsController(private val repository: QuestionRepository,
             } else { // this application type is
                 val docs: ArrayList<Media> = arrayListOf()
                 files.forEach {
+//                    val uuid = UUID.randomUUID().toString()
                     val createFile: GridFSInputFile = fs.createFile(
                             it.inputStream,
-                            it.originalFilename, true)
+                            questionId, true)
                     createFile.save()
-                    docs.add(Media(createFile.filename,
+                    docs.add(Media(it.originalFilename,
                             createFile.length,
                             createFile.contentType,
                             createFile.id.toString()))
@@ -120,6 +124,45 @@ class QuestionsController(private val repository: QuestionRepository,
         }
 
     }
+
+    private fun getGridFSInstance(): GridFS {
+        val mongo = MongoClient("localhost", 27017)
+        val db: DB = mongo.getDB("NetworksDb") // ahh its even deprecated!!!
+        return GridFS(db)
+    }
+
+    //function to get the files for a specific question
+    @GetMapping("/{q_id}/files")
+    fun getFile(@PathVariable("q_id") questionId: String,
+                @RequestParam("type") type: String) :ResponseEntity<Resource> {
+        val fs = getGridFSInstance()
+//        val question = repository.findOne(questionId)
+        return when(type) {
+            "F" -> {
+                val list: MutableList<GridFSDBFile> = fs.find(questionId)
+                list.forEach {
+
+                }
+                 ResponseEntity.ok().body(null)
+            } // F for file
+            "M" -> {
+                val findOne: GridFSDBFile = fs.findOne(questionId)
+                val resource: InputStreamResource  = InputStreamResource(findOne.inputStream)
+                val headers = ""
+                 ResponseEntity.ok()
+                        .header(headers)
+                        .contentLength(findOne.length)
+                        .contentType(MediaType.parseMediaType("application/octet-stream"))
+                        .body(resource)
+            } // M for media
+            else -> {
+                ResponseEntity.ok().body(null)
+            }
+        }
+    }
+
+
+
 
 
     @DeleteMapping("/{q_id}") //questions/2

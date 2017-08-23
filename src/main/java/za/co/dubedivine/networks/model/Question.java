@@ -25,9 +25,9 @@ public class Question {
     @Indexed
     private List<Tag> tags;
 
-    private Media video;
     private String type;
-    private List<Media> files;
+    private Media video;
+    private List<Media> files; //this can be combined with video dwag
     private Date createdAt = new Date();
 
 

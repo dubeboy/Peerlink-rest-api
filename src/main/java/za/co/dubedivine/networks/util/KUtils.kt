@@ -6,10 +6,10 @@ object KUtils {
     }
 
     fun getFileType(mime: String) : CONTENT_TYPE {
-        if(mime.startsWith("image") || mime.startsWith("video")) {
-            return CONTENT_TYPE.VID_IMG
+        return if(mime.startsWith("image") || mime.startsWith("video")) {
+            CONTENT_TYPE.VID_IMG
         } else {
-            return CONTENT_TYPE.DOC
+            CONTENT_TYPE.DOC
         }
     }
 }
