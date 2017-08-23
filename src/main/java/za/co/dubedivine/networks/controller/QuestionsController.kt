@@ -135,6 +135,7 @@ class QuestionsController(private val repository: QuestionRepository,
     @GetMapping("/{q_id}/files")
     fun getFile(@PathVariable("q_id") questionId: String,
                 @RequestParam("type") type: String) :ResponseEntity<Resource> {
+        println("the question ID is $questionId and the type is $type")
         val fs = getGridFSInstance()
 //        val question = repository.findOne(questionId)
         return when(type) {
@@ -147,10 +148,10 @@ class QuestionsController(private val repository: QuestionRepository,
             } // F for file
             "M" -> {
                 val findOne: GridFSDBFile = fs.findOne(questionId)
-                val resource: InputStreamResource  = InputStreamResource(findOne.inputStream)
-                val headers = ""
+                val resource  = InputStreamResource(findOne.inputStream)
+                println("found one $resource")
+//                val headers = ""
                  ResponseEntity.ok()
-                        .header(headers)
                         .contentLength(findOne.length)
                         .contentType(MediaType.parseMediaType("application/octet-stream"))
                         .body(resource)
