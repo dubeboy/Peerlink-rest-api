@@ -2,18 +2,10 @@ package za.co.dubedivine.networks.controller
 
 import com.mongodb.BasicDBObject
 import com.mongodb.DB
-import com.mongodb.DBObject
 import com.mongodb.MongoClient
-import com.mongodb.client.MongoDatabase
-import com.mongodb.client.gridfs.GridFSBucket
-import com.mongodb.client.gridfs.GridFSBuckets
-import com.mongodb.client.gridfs.model.GridFSUploadOptions
 import com.mongodb.gridfs.GridFS
 import com.mongodb.gridfs.GridFSInputFile
-import org.bson.Document
 import org.springframework.data.domain.Sort
-import org.springframework.data.mongodb.core.MongoTemplate
-import org.springframework.data.mongodb.gridfs.GridFsOperations
 import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
@@ -68,30 +60,65 @@ class QuestionsController(private val repository: QuestionRepository,
         repository.save(question)
     }
 
+    /**
+     * so this function should actually handle both uploading of images and videos
+     * and also uploading of many documents
+    * */
     @PostMapping("/{q_id}/files")
     fun addFiles(@PathVariable("q_id") questionId: String,
-                 @RequestParam("file") file: MultipartFile): ResponseEntity<StatusResponseEntity> {
+                 @RequestParam("file") files: List <MultipartFile>): ResponseEntity<StatusResponseEntity> {
         val question = repository.findOne(questionId)
         if ((question) != null) {
             //todo: i gues this code is bad because it open a nother connection it was not supposed to do that!!
+
             val mongo = MongoClient("localhost", 27017)
-            val db: DB = mongo.getDB("NetworksDb")
+            val db: DB = mongo.getDB("NetworksDb") // ahh its even deprecated!!!
             val fs = GridFS(db)
             val metaData = BasicDBObject()
+
             metaData.put("q_id", questionId)
             println("the bucket name is:  ${fs.bucketName} and the db:  ${fs.db}")
-            val createFile: GridFSInputFile = fs.createFile(file.inputStream, file.originalFilename)
-            createFile.save()
-            val id = createFile.id
-            println("the is of the file is: $id")
-            question.video = Video(createFile.filename, createFile.length, createFile.contentType, createFile.id.toString())
-            return ResponseEntity(StatusResponseEntity(true, "file created"), HttpStatus.CREATED)
-
+            if (files.size == 1) {
+                val createFile: GridFSInputFile = fs.createFile(
+                        files[0].inputStream,
+                        files[0].originalFilename,
+                        true)
+                createFile.save()
+                val id = createFile.id
+                println("the is of the file is: $id")
+                question.video = Media(
+                        createFile.filename,
+                        createFile.length,
+                        createFile.contentType,
+                        createFile.id.toString())
+                repository.save(question)
+                return ResponseEntity(StatusResponseEntity(
+                        true,
+                        "file created"),
+                        HttpStatus.CREATED)
+            } else { // this application type is
+                val docs: ArrayList<Media> = arrayListOf()
+                files.forEach {
+                    val createFile: GridFSInputFile = fs.createFile(
+                            it.inputStream,
+                            it.originalFilename, true)
+                    createFile.save()
+                    docs.add(Media(createFile.filename,
+                            createFile.length,
+                            createFile.contentType,
+                            createFile.id.toString()))
+                }
+                question.files = docs
+                repository.save(question)
+                return  ResponseEntity(StatusResponseEntity(true,
+                        "files created"), HttpStatus.CREATED)
+            }
         } else {
             return ResponseEntity(StatusResponseEntity(true,
-                    "sorry could not create file"), HttpStatus.CREATED)
+                    "sorry could not add files"), HttpStatus.CREATED)
 
         }
+
     }
 
 

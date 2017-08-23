@@ -1,7 +1,5 @@
 package za.co.dubedivine.networks.model;
 
-import org.springframework.data.annotation.Id;
-
 import java.util.Date;
 import java.util.List;
 
@@ -14,7 +12,7 @@ public class Answer {
     private boolean isChoosen;
     private Date createAt = new Date();
     private List<Comment> comments;
-    private Video video;
+    private Media video;
     private long id = System.currentTimeMillis();
 
     public Answer() {
@@ -26,7 +24,7 @@ public class Answer {
         this.isChoosen = isChoosen;
     }
 
-    public Answer(String body, long votes, boolean isChosen, List<Comment> comments, Video video) {
+    public Answer(String body, long votes, boolean isChosen, List<Comment> comments, Media video) {
         this.body = body;
         this.votes = votes;
         this.isChoosen = isChosen;
@@ -54,7 +52,7 @@ public class Answer {
         return comments;
     }
 
-    public Video getVideo() {
+    public Media getVideo() {
         return video;
     }
 

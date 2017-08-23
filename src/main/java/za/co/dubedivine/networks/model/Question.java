@@ -4,6 +4,7 @@ import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
@@ -24,9 +25,9 @@ public class Question {
     @Indexed
     private List<Tag> tags;
 
-    private Video video;
+    private Media video;
     private String type;
-    private List<Docs> docs;
+    private List<Media> files;
     private Date createdAt = new Date();
 
 
@@ -72,7 +73,7 @@ public class Question {
         return answers;
     }
 
-    public Video getVideo() {
+    public Media getVideo() {
         return video;
     }
 
@@ -80,8 +81,8 @@ public class Question {
         return type;
     }
 
-    public List<Docs> getDocs() {
-        return docs;
+    public List<Media> getFiles() {
+        return files;
     }
 
     public Date getCreatedAt() {
@@ -100,11 +101,11 @@ public class Question {
         this.answers = answers;
     }
 
-    public void setVideo(Video video) {
+    public void setVideo(Media video) {
         this.video = video;
     }
 
-    public void setDocs(List<Docs> docs) {
-        this.docs = docs;
+    public void setFiles(List<Media> files) {
+        this.files = files;
     }
 }

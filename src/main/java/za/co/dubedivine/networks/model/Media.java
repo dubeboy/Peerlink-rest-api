@@ -5,7 +5,7 @@ import java.util.Date;
 /**
  * Created by divine on 2017/08/13.
  */
-public class Video {
+public class Media {
     private String name;
     private long size;
     private String type;
@@ -36,7 +36,7 @@ public class Video {
         return createAt;
     }
 
-    public Video(String name, long size, String type, String location) {
+    public Media(String name, long size, String type, String location) {
         this.name = name;
         this.size = size;
         this.type = type;
