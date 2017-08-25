@@ -24,7 +24,7 @@ public class Question {
     private List<Answer> answers;
     @Indexed
     private List<Tag> tags;
-
+    private User user; // the user the
     private String type;
     private Media video;
     private List<Media> files; //this can be combined with video dwag

@@ -22,6 +22,7 @@ import java.util.List;
 public class Tag {
     @Id
     private String id;
+    @Indexed
     private String name;
     private Date createAt = new Date();
 

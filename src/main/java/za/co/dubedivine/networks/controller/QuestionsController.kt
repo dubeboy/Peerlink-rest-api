@@ -5,8 +5,6 @@ import com.mongodb.MongoClient
 import com.mongodb.gridfs.GridFS
 import com.mongodb.gridfs.GridFSDBFile
 import com.mongodb.gridfs.GridFSInputFile
-import org.bson.types.ObjectId
-import org.springframework.core.io.ByteArrayResource
 import org.springframework.core.io.InputStreamResource
 import org.springframework.core.io.Resource
 import org.springframework.data.domain.Sort
@@ -21,10 +19,7 @@ import za.co.dubedivine.networks.model.*
 import za.co.dubedivine.networks.model.repository.QuestionRepository
 import za.co.dubedivine.networks.model.repository.TagRepository
 import za.co.dubedivine.networks.model.responseEntity.StatusResponseEntity
-import java.nio.file.Path
-import java.nio.file.Paths
 import java.util.*
-import javax.xml.ws.Response
 
 //todo: handling invalid data an dublicate data
 //todo: split tags and questions
@@ -45,11 +40,15 @@ class QuestionsController(private val repository: QuestionRepository,
     @PutMapping //adding anew entity
     fun addQuestion(@RequestBody question: Question): ResponseEntity<Any> {
         question.tags.forEach {
-            val tag = Tag(it.name)
-            val savedTag = tagRepository.save(tag)
-
-            it.id = savedTag.id
-
+            val tag = tagRepository.findFirstByName(it.name)
+            if ( tag != null) { // this means that the tag has already been created
+                //we dont have to do anything more here all we have to do is
+                // we just have to set the ID of this tag in question to the one that exits
+                it.id = tag.id
+            } else { // else create the tag
+                val savedTag = tagRepository.save(it)
+                it.id = savedTag.id  // after creating the tag combine the tag wth the Q
+            }
         }
         repository.insert(question)
         val uri = ServletUriComponentsBuilder
@@ -77,7 +76,6 @@ class QuestionsController(private val repository: QuestionRepository,
         val question = repository.findOne(questionId)
         if ((question) != null) {
             //todo: i gues this code is bad because it open a nother connection it was not supposed to do that!!
-
             val fs = getGridFSInstance()
 
             println("the bucket name is:  ${fs.bucketName} and the db:  ${fs.db}")
@@ -102,7 +100,6 @@ class QuestionsController(private val repository: QuestionRepository,
             } else { // this application type is
                 val docs: ArrayList<Media> = arrayListOf()
                 files.forEach {
-//                    val uuid = UUID.randomUUID().toString()
                     val createFile: GridFSInputFile = fs.createFile(
                             it.inputStream,
                             questionId, true)
@@ -120,7 +117,6 @@ class QuestionsController(private val repository: QuestionRepository,
         } else {
             return ResponseEntity(StatusResponseEntity(true,
                     "sorry could not add files"), HttpStatus.CREATED)
-
         }
 
     }
@@ -146,7 +142,7 @@ class QuestionsController(private val repository: QuestionRepository,
                 }
                  ResponseEntity.ok().body(null)
             } // F for file
-            "M" -> {
+            "M" -> {  // i guess this wil work for any file
                 val findOne: GridFSDBFile = fs.findOne(questionId)
                 val resource  = InputStreamResource(findOne.inputStream)
                 println("found one $resource")
@@ -161,9 +157,6 @@ class QuestionsController(private val repository: QuestionRepository,
             }
         }
     }
-
-
-
 
 
     @DeleteMapping("/{q_id}") //questions/2

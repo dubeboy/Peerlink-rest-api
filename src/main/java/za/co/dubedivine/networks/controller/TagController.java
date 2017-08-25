@@ -1,9 +1,13 @@
 package za.co.dubedivine.networks.controller;
 
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import za.co.dubedivine.networks.model.Question;
 import za.co.dubedivine.networks.model.Tag;
-import za.co.dubedivine.networks.model.repository.QuestionRepository;
+import za.co.dubedivine.networks.model.User;
+import za.co.dubedivine.networks.model.repository.TagRepository;
+import za.co.dubedivine.networks.model.repository.UserRepository;
+import za.co.dubedivine.networks.model.responseEntity.StatusResponseEntity;
 
 import java.util.List;
 
@@ -14,26 +18,56 @@ import java.util.List;
 @RequestMapping("/tags")
 public class TagController {
 
-    private QuestionRepository tagRepository;
+    private final UserRepository userRepository;
+    private final TagRepository tagRepository;
 
-    public TagController(QuestionRepository tagRepository) {
+    public TagController(TagRepository tagRepository,
+                         UserRepository userRepository) {
         this.tagRepository = tagRepository;
+        this.userRepository = userRepository;
     }
 
     @GetMapping("/all")
-    public List<Question> getAll() {
-        List<Question> tags = this.tagRepository.findAll();
+    public List<Tag> getAll() {
+        List<Tag> tags = this.tagRepository.findAll();
         return tags;
+    }
+
+    @PostMapping("/{t_id}/subscribe")
+    public ResponseEntity<StatusResponseEntity> subscribeToTag(@PathVariable("t_id") String tagId,
+                                                               @PathVariable String userId) {
+
+        //function for a user  to listen to a particular TAG
+        Tag tag = tagRepository.findOne(tagId);
+        User user = userRepository.findOne(userId);
+        if (user != null && tag != null) {
+
+            List<Tag> tags = user.getTags();
+            tags.add(tag);
+            user.setTags(tags);
+
+            userRepository.save(user);
+            return
+                    new ResponseEntity<>(
+                            new StatusResponseEntity(true,
+                                    "you now listening on tag"), HttpStatus.CREATED);
+        } else {
+
+            return
+                    new ResponseEntity<>(
+                            new StatusResponseEntity(false,
+                                    "you now listening on tag"), HttpStatus.CREATED);
+        }
     }
 
 
     @PutMapping
-    public void insert(@RequestBody Question tag) {
+    public void insert(@RequestBody Tag tag) {
         this.tagRepository.insert(tag);
     }
 
     @PostMapping
-    public void update(@RequestBody Question tag) {
+    public void update(@RequestBody Tag tag) {
         tagRepository.save(tag);
     }
 
