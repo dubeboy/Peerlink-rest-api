@@ -5,6 +5,7 @@ import com.mongodb.MongoClient
 import com.mongodb.gridfs.GridFS
 import com.mongodb.gridfs.GridFSDBFile
 import com.mongodb.gridfs.GridFSInputFile
+import com.querydsl.core.types.dsl.NumberExpression
 import org.springframework.core.io.InputStreamResource
 import org.springframework.core.io.Resource
 import org.springframework.data.domain.Sort
@@ -20,6 +21,7 @@ import za.co.dubedivine.networks.model.repository.QuestionRepository
 import za.co.dubedivine.networks.model.repository.TagRepository
 import za.co.dubedivine.networks.model.responseEntity.StatusResponseEntity
 import java.util.*
+import java.util.regex.Pattern
 
 //todo: handling invalid data an dublicate data
 //todo: split tags and questions
@@ -158,6 +160,30 @@ class QuestionsController(private val repository: QuestionRepository,
         }
     }
 
+    @GetMapping("/search?t_id={t_id}")
+    fun getTagQuestions(@PathVariable("t_id") tagId: String): Set<Question> {
+        val tag = tagRepository.findOne(tagId)
+        val questions = repository.findAll()  //todo: needs to be fixed asap
+        val ques = hashSetOf<Question>()
+        questions.forEach { q ->
+            val tags = q.tags
+            for (it in tags) {
+                if(it == tag) {
+                    ques.add(q)
+                    break
+                }
+            }
+        }
+        return ques
+    }
+
+    //the search feature you can search by tag #hello or (question name) or just question
+    @GetMapping("/search")
+    fun search(@PathVariable tag: String) {
+        val p = Pattern.compile("#(\\d*[A-Za-z_]+\\w*)\\b(?!;)") //pattern to match the has tags
+
+//        #science is the best yoh #math
+    }
 
     @DeleteMapping("/{q_id}") //questions/2
     fun deleteQuestion(@PathVariable("q_id") questionId: String) {

@@ -27,15 +27,17 @@ public class TagController {
         this.userRepository = userRepository;
     }
 
+
+
     @GetMapping("/all")
     public List<Tag> getAll() {
         List<Tag> tags = this.tagRepository.findAll();
         return tags;
     }
 
-    @PostMapping("/{t_id}/subscribe")
+    @PostMapping("/{t_id}/subscribe/{u_id}")
     public ResponseEntity<StatusResponseEntity> subscribeToTag(@PathVariable("t_id") String tagId,
-                                                               @PathVariable String userId) {
+                                                               @PathVariable("u_id") String userId) {
 
         //function for a user  to listen to a particular TAG
         Tag tag = tagRepository.findOne(tagId);
@@ -73,6 +75,7 @@ public class TagController {
 
     @DeleteMapping("/{id}")
     public void delete(@PathVariable("id") String id) {
+        //todo: should also go the tags part and then delete the reference
         tagRepository.delete(id);
     }
 }
