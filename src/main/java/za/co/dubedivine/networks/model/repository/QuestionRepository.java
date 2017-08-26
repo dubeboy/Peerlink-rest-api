@@ -6,6 +6,8 @@ import org.springframework.stereotype.Repository;
 import za.co.dubedivine.networks.model.Question;
 import za.co.dubedivine.networks.model.Tag;
 
+import java.util.List;
+
 @Repository
 public interface QuestionRepository extends MongoRepository<Question, String>, QueryDslPredicateExecutor<Question> {
 }

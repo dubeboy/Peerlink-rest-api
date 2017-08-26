@@ -1,12 +1,12 @@
 package za.co.dubedivine.networks.model;
 
-import com.querydsl.core.annotations.QueryEntity;
+import kotlin.jvm.internal.Intrinsics;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.util.Date;
-import java.util.List;
+import java.util.Set;
 
 /**
  * Created by divine on 2017/08/13.
@@ -25,6 +25,7 @@ public class Tag {
     @Indexed
     private String name;
     private Date createAt = new Date();
+    private Set<String> questionIds;
 
     public Tag() {
     }
@@ -47,5 +48,17 @@ public class Tag {
 
     public String getId() {
         return id;
+    }
+
+    public Set<String> getQuestionIds() {
+        return questionIds;
+    }
+
+    public void setQuestionIds(Set<String> tagIds) {
+        this.questionIds = tagIds;
+    }
+
+    public void addQuestionIdToTag(String id) {
+            this.questionIds.add(id);
     }
 }

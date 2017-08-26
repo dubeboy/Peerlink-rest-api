@@ -2,6 +2,7 @@ package za.co.dubedivine.networks.model;
 
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.index.Indexed;
+import org.springframework.data.mongodb.core.index.TextIndexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.util.ArrayList;
@@ -16,14 +17,16 @@ import java.util.List;
 public class Question {
     @Id
     private String id;
-//    @Indexed  //todo: should somehow be able to search fast with title and body
+    //    @Indexed  //todo: should somehow be able to search fast with title and body
+    @TextIndexed
     private String title;
+    @TextIndexed
     private String body;
     private long votes;
     private List<Comment> comments;
     private List<Answer> answers;
     @Indexed
-    private List<Tag> tags;
+    private List<Tag> tags;  //todo: bad it should be mapping!!
     private User user; // the user the
     private String type;
     private Media video;
