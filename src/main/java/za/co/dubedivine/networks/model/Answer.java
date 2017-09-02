@@ -1,11 +1,14 @@
 package za.co.dubedivine.networks.model;
 
+import org.springframework.data.mongodb.core.mapping.Document;
+
 import java.util.Date;
 import java.util.List;
 
 /**
  * Created by divine on 2017/08/13.
  */
+@Document
 public class Answer {
     private String body;
     private long votes;

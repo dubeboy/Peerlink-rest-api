@@ -27,6 +27,6 @@ object KUtils {
 
     fun cleanText(text: String): String {
         val p = Pattern.compile(REGEX)
-        return p.matcher(text).replaceAll("")
+        return p.matcher(text).replaceAll(" ")
     }
 }

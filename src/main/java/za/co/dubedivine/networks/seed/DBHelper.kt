@@ -38,8 +38,8 @@ class DBHelper(private val questionRepository: QuestionRepository) : CommandLine
         questionB.comments = arrayListOf(Comment("good question", 1))
 
         //todo : just for testing
-//        questionRepository.deleteAll() //delete all first
-//        questionRepository.save(arrayListOf(questionA, questionB))
+        questionRepository.deleteAll() //delete all first
+        questionRepository.save(arrayListOf(questionA, questionB))
 
     }
 }

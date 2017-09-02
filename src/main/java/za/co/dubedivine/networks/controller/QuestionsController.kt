@@ -1,14 +1,19 @@
 package za.co.dubedivine.networks.controller
 
 import com.mongodb.DB
+import com.mongodb.Mongo
 import com.mongodb.MongoClient
+import com.mongodb.QueryBuilder
 import com.mongodb.gridfs.GridFS
 import com.mongodb.gridfs.GridFSDBFile
 import com.mongodb.gridfs.GridFSInputFile
+import com.querydsl.core.types.dsl.ListPath
 import org.springframework.core.io.InputStreamResource
 import org.springframework.core.io.Resource
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Sort
+import org.springframework.data.mongodb.core.MongoTemplate
+import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.TextCriteria
 import org.springframework.data.mongodb.core.query.TextQuery
@@ -34,7 +39,6 @@ import java.util.regex.Pattern
 @RequestMapping("questions")
 class QuestionsController(private val repository: QuestionRepository,
                           private val tagRepository: TagRepository) {
-
     //TODO: Google post vs put
     val allQuestions: List<Question>
         @GetMapping
@@ -136,6 +140,9 @@ class QuestionsController(private val repository: QuestionRepository,
     }
 
     private fun getGridFSInstance(): GridFS {
+        // get the application context here and then hook to the mongo template and then you get all connections
+        // session properties
+
         val mongo = MongoClient("localhost", 27017)
         val db: DB = mongo.getDB("NetworksDb") // ahh its even deprecated!!!
         return GridFS(db)
@@ -156,7 +163,7 @@ class QuestionsController(private val repository: QuestionRepository,
                 }
                 ResponseEntity.ok().body(null)
             } // F for file
-            "M" -> {  // i guess this wil work for any file
+            else -> {  // i guess this wil work for any file
                 val findOne: GridFSDBFile = fs.findOne(questionId)
                 val resource = InputStreamResource(findOne.inputStream)
                 println("found one $resource")
@@ -166,9 +173,6 @@ class QuestionsController(private val repository: QuestionRepository,
                         .contentType(MediaType.parseMediaType("application/octet-stream"))
                         .body(resource)
             } // M for media
-            else -> {
-                ResponseEntity.ok().body(null)
-            }
         }
     }
 
@@ -197,30 +201,34 @@ class QuestionsController(private val repository: QuestionRepository,
         val p = Pattern.compile(KUtils.REGEX) //pattern to match the has tags
         val ques = setOf<Question>()
         val purifiedSearchText = KUtils.cleanText(searchText)
-        val textCriteria: TextCriteria = TextCriteria
-                .forDefaultLanguage()
-                .matchingAny(purifiedSearchText)  //todo should test if this works
-        val query: Query = TextQuery.queryText(textCriteria)
-                .sortByScore()
-                .with(PageRequest(0, 20))   //todo: should change page page params
+        val mongoTemplate = MongoTemplate(Mongo(), "NetworksDb")
+
         if (p.toRegex().containsMatchIn(searchText)) {
+//            val qQuestion = QQuestion("qquestion")
+            var find: MutableList<Question> = mutableListOf()
             p.toRegex().findAll(searchText).forEach { tagString ->
-                //todo: should add paginate here
-                val tag = tagRepository.findFirstByName(tagString.value.substring(1))
-                val questionIds = tag.questionIds
-               questionIds.forEach {
-                   val question = repository.findOne(it)
-                   val body = question.body
-                   val title = question.title
-                   body.contains("")
-                   question.answers.forEach { answer ->
-
-                   }
-               }
+//                val tags: ListPath<Tag, QTag> = qQuestion.tags
+                QueryBuilder.start("question").exists("tag")
+                val criteria: Criteria = Criteria.where("question.tags").elemMatch(Criteria.where("name").`is`(tagString))
+                val query = Query.query(criteria)
+                println(query.fields())
+                find = mongoTemplate.find(query, Question::class.java)
             }
+            return find.toHashSet()
         } else {  // NO TAGS SEARCH THROUGH ALL THE QUESTIONS BOSS
+            val textCriteria: TextCriteria = TextCriteria
+                    .forDefaultLanguage()
+                    .matchingAny(purifiedSearchText)  //todo should test if this works
 
+            val query: Query = TextQuery.queryText(textCriteria)
+                    .sortByScore()
+                    .with(PageRequest(0, 30))   //todo: should change page page params
+            //todo: bad man!!
+            val list: MutableList<Question> = mongoTemplate.find(query, Question::class.java)  //mongo template is deprected
+            return list.toSet()
         }
+
+
     }
 
 

@@ -1,10 +1,13 @@
 package za.co.dubedivine.networks.model;
 
+import org.springframework.data.mongodb.core.mapping.Document;
+
 import java.util.Date;
 
 /**
  * Created by divine on 2017/08/13.
  */
+@Document
 public class Comment {
     private String body;
     private long votes;
