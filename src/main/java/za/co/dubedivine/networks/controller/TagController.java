@@ -5,8 +5,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import za.co.dubedivine.networks.model.Tag;
 import za.co.dubedivine.networks.model.User;
-import za.co.dubedivine.networks.model.repository.TagRepository;
-import za.co.dubedivine.networks.model.repository.UserRepository;
+import za.co.dubedivine.networks.repository.TagRepository;
+import za.co.dubedivine.networks.repository.UserRepository;
 import za.co.dubedivine.networks.model.responseEntity.StatusResponseEntity;
 
 import java.util.List;

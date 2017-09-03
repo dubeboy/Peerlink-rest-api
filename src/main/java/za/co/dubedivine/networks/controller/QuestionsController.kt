@@ -3,17 +3,14 @@ package za.co.dubedivine.networks.controller
 import com.mongodb.DB
 import com.mongodb.Mongo
 import com.mongodb.MongoClient
-import com.mongodb.QueryBuilder
 import com.mongodb.gridfs.GridFS
 import com.mongodb.gridfs.GridFSDBFile
 import com.mongodb.gridfs.GridFSInputFile
-import com.querydsl.core.types.dsl.ListPath
 import org.springframework.core.io.InputStreamResource
 import org.springframework.core.io.Resource
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Sort
 import org.springframework.data.mongodb.core.MongoTemplate
-import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.TextCriteria
 import org.springframework.data.mongodb.core.query.TextQuery
@@ -25,8 +22,8 @@ import org.springframework.web.bind.annotation.*
 import org.springframework.web.multipart.MultipartFile
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder
 import za.co.dubedivine.networks.model.*
-import za.co.dubedivine.networks.model.repository.QuestionRepository
-import za.co.dubedivine.networks.model.repository.TagRepository
+import za.co.dubedivine.networks.repository.QuestionRepository
+import za.co.dubedivine.networks.repository.TagRepository
 import za.co.dubedivine.networks.model.responseEntity.StatusResponseEntity
 import za.co.dubedivine.networks.util.KUtils
 import java.util.*
@@ -176,7 +173,7 @@ class QuestionsController(private val repository: QuestionRepository,
         }
     }
 
-    @GetMapping("/search?t_id={t_id}")
+    @GetMapping("/tag_search?t_id={t_id}")
     fun getTagQuestions(@PathVariable("t_id") tagId: String): Set<Question> {
         val tag = tagRepository.findFirstByName(tagId)
         val questions = repository.findAll()  //todo: needs to be fixed asap
@@ -196,39 +193,43 @@ class QuestionsController(private val repository: QuestionRepository,
     //todo:use elastic search please link is here https://www.mkyong.com/spring-boot/spring-boot-spring-data-elasticsearch-example/
     //the search feature you can search by tag #hello or (question name) or just question
     //todo: should have a go deeper flag signifying that maybe we should also search in the answers as well
-    @GetMapping("/search?{text}")
-    fun search(@PathVariable("text") searchText: String): Set<Question> {
+    //todo: http://ufasoli.blogspot.co.za/2013/08/mongodb-spring-data-elemmatch-in-field.html
+    @GetMapping("/search")
+    fun search(@RequestParam("text") searchText: String): Set<Question> {
+
+
+
+        println("the request is this $searchText")
         val p = Pattern.compile(KUtils.REGEX) //pattern to match the has tags
-        val ques = setOf<Question>()
         val purifiedSearchText = KUtils.cleanText(searchText)
         val mongoTemplate = MongoTemplate(Mongo(), "NetworksDb")
-
         if (p.toRegex().containsMatchIn(searchText)) {
-//            val qQuestion = QQuestion("qquestion")
+            println("in the one phase!")
             var find: MutableList<Question> = mutableListOf()
             p.toRegex().findAll(searchText).forEach { tagString ->
-//                val tags: ListPath<Tag, QTag> = qQuestion.tags
-                QueryBuilder.start("question").exists("tag")
-                val criteria: Criteria = Criteria.where("question.tags").elemMatch(Criteria.where("name").`is`(tagString))
-                val query = Query.query(criteria)
-                println(query.fields())
-                find = mongoTemplate.find(query, Question::class.java)
+                println("hello $tagString")
+                val questionsByTags = repository.getQuestionsByTags(tagString.value)
+                println(questionsByTags)
             }
             return find.toHashSet()
         } else {  // NO TAGS SEARCH THROUGH ALL THE QUESTIONS BOSS
+            println("in the second phase!")
             val textCriteria: TextCriteria = TextCriteria
                     .forDefaultLanguage()
                     .matchingAny(purifiedSearchText)  //todo should test if this works
-
+            println("the purifiedSearchText is $purifiedSearchText")
             val query: Query = TextQuery.queryText(textCriteria)
                     .sortByScore()
                     .with(PageRequest(0, 30))   //todo: should change page page params
             //todo: bad man!!
             val list: MutableList<Question> = mongoTemplate.find(query, Question::class.java)  //mongo template is deprected
-            return list.toSet()
+            return list.toHashSet()
         }
+    }
 
-
+    @GetMapping("/e_search?{text}") // elastic search
+    fun eSearch(@PathVariable("text") searchText: String): Set<Question> {
+        return emptySet()
     }
 
 

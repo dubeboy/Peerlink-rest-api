@@ -1,11 +1,17 @@
 package za.co.dubedivine.networks.model;
 
+
+
+import org.springframework.data.annotation.Id;
+
 import java.util.Date;
 
 /**
  * Created by divine on 2017/08/13.
  */
+@org.springframework.data.elasticsearch.annotations.Document(indexName = "divine", type = "questions")
 public class Media {
+    @Id
     private String name;
     private long size;
     private String type;

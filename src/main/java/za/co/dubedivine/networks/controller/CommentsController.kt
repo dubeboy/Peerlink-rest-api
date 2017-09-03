@@ -2,7 +2,7 @@ package za.co.dubedivine.networks.controller
 
 import org.springframework.web.bind.annotation.*
 import za.co.dubedivine.networks.model.Comment
-import za.co.dubedivine.networks.model.repository.QuestionRepository
+import za.co.dubedivine.networks.repository.QuestionRepository
 import java.util.ArrayList
 
 

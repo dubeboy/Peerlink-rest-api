@@ -5,7 +5,7 @@ import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 import za.co.dubedivine.networks.model.Answer
 import za.co.dubedivine.networks.model.responseEntity.StatusResponseEntity
-import za.co.dubedivine.networks.model.repository.QuestionRepository
+import za.co.dubedivine.networks.repository.QuestionRepository
 import java.util.ArrayList
 
 @RestController

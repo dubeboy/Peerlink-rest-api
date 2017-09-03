@@ -3,8 +3,8 @@ package za.co.dubedivine.networks.controller
 import org.springframework.web.bind.annotation.*
 import za.co.dubedivine.networks.model.Tag
 import za.co.dubedivine.networks.model.User
-import za.co.dubedivine.networks.model.repository.TagRepository
-import za.co.dubedivine.networks.model.repository.UserRepository
+import za.co.dubedivine.networks.repository.TagRepository
+import za.co.dubedivine.networks.repository.UserRepository
 
 @RequestMapping("users")
 class UsersKontroller(private val userRepository: UserRepository,

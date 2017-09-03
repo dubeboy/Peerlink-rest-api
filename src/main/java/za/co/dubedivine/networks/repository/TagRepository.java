@@ -1,4 +1,4 @@
-package za.co.dubedivine.networks.model.repository;
+package za.co.dubedivine.networks.repository;
 
 import org.springframework.data.mongodb.repository.MongoRepository;
 import org.springframework.data.querydsl.QueryDslPredicateExecutor;

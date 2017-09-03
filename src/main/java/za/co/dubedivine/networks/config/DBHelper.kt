@@ -1,4 +1,4 @@
-package za.co.dubedivine.networks.seed
+package za.co.dubedivine.networks.config
 
 import org.springframework.boot.CommandLineRunner
 import org.springframework.stereotype.Component
@@ -6,7 +6,7 @@ import za.co.dubedivine.networks.model.Answer
 import za.co.dubedivine.networks.model.Comment
 import za.co.dubedivine.networks.model.Question
 import za.co.dubedivine.networks.model.Tag
-import za.co.dubedivine.networks.model.repository.QuestionRepository
+import za.co.dubedivine.networks.repository.QuestionRepository
 
 /**
  * Created by divine on 2017/08/11.
