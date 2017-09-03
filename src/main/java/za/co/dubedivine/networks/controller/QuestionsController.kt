@@ -266,9 +266,18 @@ class QuestionsController(private val repository: QuestionRepository,
         }
     }
 
-    @GetMapping("/e_search?{text}") // elastic search
-    fun eSearch(@RequestParam("text") searchText: String): Set<Question> {
-        return emptySet()
+    @GetMapping("/e_search") // elastic search
+    fun eSearch(@RequestParam("text") searchText: String): Set<ElasticQuestion> {
+      return if (!KUtils.hasTags(searchText)) {
+            elasticQuestionService.search(searchText).toSet()
+        } else {
+          val findByTitleAndTagsName: Set<ElasticQuestion> = emptySet()
+          val findAll = KUtils.getPattern().toRegex().findAll(searchText).forEach { tagName ->
+             val purifiedTitle =  KUtils.cleanText(searchText)
+              findByTitleAndTagsName.plus(elasticQuestionService.findByTitleAndTagsName(purifiedTitle, tagName.value))
+          }
+          findByTitleAndTagsName
+        }
     }
 
 

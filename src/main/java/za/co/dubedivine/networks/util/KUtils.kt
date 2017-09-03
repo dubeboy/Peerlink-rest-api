@@ -1,5 +1,6 @@
 package za.co.dubedivine.networks.util
 
+import com.sun.org.apache.xpath.internal.operations.Bool
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import za.co.dubedivine.networks.model.responseEntity.StatusResponseEntity
@@ -29,4 +30,11 @@ object KUtils {
         val p = Pattern.compile(REGEX)
         return p.matcher(text).replaceAll(" ")
     }
+
+    fun hasTags(text: String): Boolean {
+        val p = getPattern()//pattern to match the has tags
+        return p.toRegex().containsMatchIn(text)
+    }
+
+    fun getPattern(): Pattern = Pattern.compile(KUtils.REGEX)
 }
