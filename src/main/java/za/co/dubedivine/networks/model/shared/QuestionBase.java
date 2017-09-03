@@ -9,8 +9,10 @@ import java.util.Date;
 import java.util.List;
 
 public abstract class QuestionBase {
+
+    // protected because it has a setter in the Elastic question child class
     @Id
-    private String id;
+    protected String id;
     //    @Indexed  //todo: should somehow be able to search fast with title and body
     @TextIndexed
     private String title;

@@ -6,6 +6,7 @@ import com.mongodb.MongoClient
 import com.mongodb.gridfs.GridFS
 import com.mongodb.gridfs.GridFSDBFile
 import com.mongodb.gridfs.GridFSInputFile
+import org.springframework.context.annotation.AnnotationConfigApplicationContext
 import org.springframework.core.io.InputStreamResource
 import org.springframework.core.io.Resource
 import org.springframework.data.domain.PageRequest
@@ -18,13 +19,18 @@ import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor
 import org.springframework.web.bind.annotation.*
 import org.springframework.web.multipart.MultipartFile
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder
-import za.co.dubedivine.networks.model.*
+import za.co.dubedivine.networks.config.AppConfig
+import za.co.dubedivine.networks.model.Media
+import za.co.dubedivine.networks.model.Question
+import za.co.dubedivine.networks.model.elastic.ElasticQuestion
+import za.co.dubedivine.networks.model.responseEntity.StatusResponseEntity
 import za.co.dubedivine.networks.repository.QuestionRepository
 import za.co.dubedivine.networks.repository.TagRepository
-import za.co.dubedivine.networks.model.responseEntity.StatusResponseEntity
+import za.co.dubedivine.networks.services.elastic.ElasticQuestionService
 import za.co.dubedivine.networks.util.KUtils
 import java.util.*
 import java.util.regex.Pattern
@@ -35,7 +41,13 @@ import java.util.regex.Pattern
 @RestController
 @RequestMapping("questions")
 class QuestionsController(private val repository: QuestionRepository,
-                          private val tagRepository: TagRepository) {
+                          private val tagRepository: TagRepository,
+                          private val elasticQuestionRepo: ElasticQuestionService) {
+
+    private final val context = AnnotationConfigApplicationContext(AppConfig::class.java)
+    val taskExecutor = context.getBean("taskExecutor") as ThreadPoolTaskExecutor
+
+
     //TODO: Google post vs put
     val allQuestions: List<Question>
         @GetMapping
@@ -43,12 +55,12 @@ class QuestionsController(private val repository: QuestionRepository,
             val sort = Sort(Sort.Direction.DESC, "createdAt")
             return repository.findAll(sort)
         }
-
+    //needs a mojor refactoring
     @PutMapping //adding anew entity
     fun addQuestion(@RequestBody question: Question): ResponseEntity<Any> {
         question.tags.forEach { questionItem ->
             val tag = tagRepository.findFirstByName(questionItem.name)
-            fun check() = if(questionItem.questionIds == null) {
+            fun check() = if (questionItem.questionIds == null) {
                 questionItem.questionIds = setOf(questionItem.id)
             } else {
                 tag.addQuestionIdToTag(questionItem.id)
@@ -65,7 +77,13 @@ class QuestionsController(private val repository: QuestionRepository,
                 questionItem.id = savedTag.id  // after creating the tag combine the tag wth the Q
             }
         }
-        repository.insert(question)
+        val q = repository.insert(question)
+        taskExecutor.execute({
+            //should stop auto enable mongo and then i can create a mongo template
+            val elasticQuestion = ElasticQuestion(q.title, q.body, q.votes, q.tags, q.type)
+            elasticQuestion.id = q.id
+            elasticQuestionRepo.save(elasticQuestion)
+        })
         val uri = ServletUriComponentsBuilder
                 .fromCurrentRequest()
                 .path("/{id}")
@@ -196,7 +214,6 @@ class QuestionsController(private val repository: QuestionRepository,
     //todo: http://ufasoli.blogspot.co.za/2013/08/mongodb-spring-data-elemmatch-in-field.html
     @GetMapping("/search")
     fun search(@RequestParam("text") searchText: String): Set<Question> {
-
 
 
         println("the request is this $searchText")

@@ -9,6 +9,9 @@ import java.util.List;
 @Document(indexName = "divine", type = "questions")
 public class ElasticQuestion extends QuestionBase {
 
+    public void setId(String id) {
+        super.id = id;
+    }
 
     public ElasticQuestion(String title, String body, long votes, List<Tag> tags, String type) {
         super(title, body, votes, tags, type);

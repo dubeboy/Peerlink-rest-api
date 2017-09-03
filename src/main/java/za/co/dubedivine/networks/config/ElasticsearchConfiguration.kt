@@ -17,7 +17,7 @@ import org.springframework.context.annotation.Bean
 
 
 @Configuration
-@EnableElasticsearchRepositories(basePackages = arrayOf("za.co.dubedivine.networks.repository.elastic", "za.co.dubedivine.networks.model"))
+@EnableElasticsearchRepositories(basePackages = arrayOf("za.co.dubedivine.networks.repository.elastic"))
 class ElasticsearchConfiguration {
 
     @Value("\${elasticsearch.host}")
