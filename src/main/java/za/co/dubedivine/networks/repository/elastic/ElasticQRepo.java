@@ -13,4 +13,5 @@ import java.util.List;
 @Repository
 public interface ElasticQRepo extends ElasticsearchRepository<ElasticQuestion, String> {
     List<ElasticQuestion> findByTagsName(String tagName);
+//    List<ElasticQRepo> findBy
 }

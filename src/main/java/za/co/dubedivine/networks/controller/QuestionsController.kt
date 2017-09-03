@@ -45,11 +45,12 @@ import java.util.regex.Pattern
 @RequestMapping("questions")
 class QuestionsController(private val repository: QuestionRepository,
                           private val tagRepository: TagRepository,
-                          private val elasticQuestionRepo: ElasticQuestionService,
+                          private val elasticQuestionService: ElasticQuestionService,
                           private val elasticTagRepo: ElasticTagRepo) {
 
     private final val context = AnnotationConfigApplicationContext(AppConfig::class.java)
-    val taskExecutor = context.getBean("taskExecutor") as ThreadPoolTaskExecutor
+    private final val taskExecutor = context.getBean("taskExecutor") as ThreadPoolTaskExecutor
+//    val
 
 
     //TODO: Google post vs put
@@ -59,7 +60,7 @@ class QuestionsController(private val repository: QuestionRepository,
             val sort = Sort(Sort.Direction.DESC, "createdAt")
             return repository.findAll(sort)
         }
-    //needs a mojor refactoring
+    //needs a major refactoring
     @PutMapping //adding anew entity
     fun addQuestion(@RequestBody question: Question): ResponseEntity<Any> {
         var elasticTagToSave: ElasticTag? = null
@@ -102,7 +103,7 @@ class QuestionsController(private val repository: QuestionRepository,
             //should stop auto enable mongo and then i can create a mongo template
             val elasticQuestion = ElasticQuestion(q.title, q.body, q.votes, q.tags, q.type)
             elasticQuestion.id = q.id
-            elasticQuestionRepo.save(elasticQuestion)
+            elasticQuestionService.save(elasticQuestion)
             elasticTagRepo.save(elasticTagToSave)
         })
         val uri = ServletUriComponentsBuilder
@@ -246,7 +247,7 @@ class QuestionsController(private val repository: QuestionRepository,
             var find: MutableList<Question> = mutableListOf()
             p.toRegex().findAll(searchText).forEach { tagString ->
                 println("hello $tagString")
-                val questionsByTags = repository.getQuestionsByTags(tagString.value)
+                val questionsByTags = repository.findByTagsName(tagString.value)
                 println(questionsByTags)
             }
             return find.toHashSet()
@@ -266,7 +267,7 @@ class QuestionsController(private val repository: QuestionRepository,
     }
 
     @GetMapping("/e_search?{text}") // elastic search
-    fun eSearch(@PathVariable("text") searchText: String): Set<Question> {
+    fun eSearch(@RequestParam("text") searchText: String): Set<Question> {
         return emptySet()
     }
 
