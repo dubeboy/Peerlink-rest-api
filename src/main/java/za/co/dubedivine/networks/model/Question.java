@@ -1,13 +1,8 @@
 package za.co.dubedivine.networks.model;
 
-import org.springframework.data.annotation.Id;
-import org.springframework.data.mongodb.core.index.Indexed;
-import org.springframework.data.mongodb.core.index.TextIndexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 import za.co.dubedivine.networks.model.shared.QuestionBase;
 
-import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 
 /**

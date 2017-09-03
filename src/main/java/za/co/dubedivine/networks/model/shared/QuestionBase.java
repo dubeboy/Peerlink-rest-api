@@ -1,6 +1,8 @@
 package za.co.dubedivine.networks.model.shared;
 
 import org.springframework.data.annotation.Id;
+import org.springframework.data.elasticsearch.annotations.Field;
+import org.springframework.data.elasticsearch.annotations.FieldType;
 import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.index.TextIndexed;
 import za.co.dubedivine.networks.model.*;
@@ -22,6 +24,7 @@ public abstract class QuestionBase {
     private List<Comment> comments;
     private List<Answer> answers;
     @Indexed
+    @Field(type = FieldType.Nested)
     private List<Tag> tags;  //todo: bad it should be mapping!!
     private User user; // the user the
     private String type;

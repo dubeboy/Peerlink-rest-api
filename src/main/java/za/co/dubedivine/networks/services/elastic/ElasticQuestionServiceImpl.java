@@ -1,12 +1,12 @@
 package za.co.dubedivine.networks.services.elastic;
 
-import org.springframework.data.domain.PageRequest;
-import za.co.dubedivine.networks.model.Question;
+import org.springframework.stereotype.Service;
 import za.co.dubedivine.networks.model.elastic.ElasticQuestion;
 import za.co.dubedivine.networks.repository.elastic.ElasticQRepo;
 
 import java.util.List;
 
+@Service
 public class ElasticQuestionServiceImpl implements ElasticQuestionService {
 
     private ElasticQRepo elasticQRepo;

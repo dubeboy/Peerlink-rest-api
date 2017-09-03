@@ -26,10 +26,13 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder
 import za.co.dubedivine.networks.config.AppConfig
 import za.co.dubedivine.networks.model.Media
 import za.co.dubedivine.networks.model.Question
+import za.co.dubedivine.networks.model.Tag
 import za.co.dubedivine.networks.model.elastic.ElasticQuestion
+import za.co.dubedivine.networks.model.elastic.ElasticTag
 import za.co.dubedivine.networks.model.responseEntity.StatusResponseEntity
 import za.co.dubedivine.networks.repository.QuestionRepository
 import za.co.dubedivine.networks.repository.TagRepository
+import za.co.dubedivine.networks.repository.elastic.ElasticTagRepo
 import za.co.dubedivine.networks.services.elastic.ElasticQuestionService
 import za.co.dubedivine.networks.util.KUtils
 import java.util.*
@@ -42,7 +45,8 @@ import java.util.regex.Pattern
 @RequestMapping("questions")
 class QuestionsController(private val repository: QuestionRepository,
                           private val tagRepository: TagRepository,
-                          private val elasticQuestionRepo: ElasticQuestionService) {
+                          private val elasticQuestionRepo: ElasticQuestionService,
+                          private val elasticTagRepo: ElasticTagRepo) {
 
     private final val context = AnnotationConfigApplicationContext(AppConfig::class.java)
     val taskExecutor = context.getBean("taskExecutor") as ThreadPoolTaskExecutor
@@ -58,23 +62,39 @@ class QuestionsController(private val repository: QuestionRepository,
     //needs a mojor refactoring
     @PutMapping //adding anew entity
     fun addQuestion(@RequestBody question: Question): ResponseEntity<Any> {
+        var elasticTagToSave: ElasticTag? = null
+
+
         question.tags.forEach { questionItem ->
             val tag = tagRepository.findFirstByName(questionItem.name)
+
             fun check() = if (questionItem.questionIds == null) {
                 questionItem.questionIds = setOf(questionItem.id)
             } else {
                 tag.addQuestionIdToTag(questionItem.id)
             }
+
+
+            val instantiateElasticTag : (savedTag: Tag) -> ElasticTag = {
+                val elasticTag = ElasticTag(it.name)
+                elasticTag.questionIds = it.questionIds
+                elasticTag.id = it.id
+                elasticTag
+            }
+
             if (tag != null) { // this means that the tag has already been created
                 //we dont have to do anything more here all we have to do is
                 // we just have to set the ID of this tag in questionItem to the one that exits
                 questionItem.id = tag.id
                 check()
-                tagRepository.save(tag)
+                val savedTag = tagRepository.save(tag)
+                elasticTagToSave = instantiateElasticTag(savedTag)
+
             } else { // else create the tag
                 check()
                 val savedTag = tagRepository.save(questionItem)
                 questionItem.id = savedTag.id  // after creating the tag combine the tag wth the Q
+                elasticTagToSave = instantiateElasticTag(savedTag)
             }
         }
         val q = repository.insert(question)
@@ -83,6 +103,7 @@ class QuestionsController(private val repository: QuestionRepository,
             val elasticQuestion = ElasticQuestion(q.title, q.body, q.votes, q.tags, q.type)
             elasticQuestion.id = q.id
             elasticQuestionRepo.save(elasticQuestion)
+            elasticTagRepo.save(elasticTagToSave)
         })
         val uri = ServletUriComponentsBuilder
                 .fromCurrentRequest()
