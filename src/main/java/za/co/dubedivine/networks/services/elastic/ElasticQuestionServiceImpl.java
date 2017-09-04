@@ -1,9 +1,14 @@
 package za.co.dubedivine.networks.services.elastic;
 
-import com.mongodb.QueryBuilder;
+import org.elasticsearch.index.query.QueryBuilder;
+import org.elasticsearch.index.query.QueryBuilders;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.elasticsearch.core.ElasticsearchTemplate;
+import org.springframework.data.elasticsearch.core.query.NativeSearchQuery;
 import org.springframework.data.elasticsearch.core.query.NativeSearchQueryBuilder;
 import org.springframework.data.elasticsearch.core.query.SearchQuery;
 import org.springframework.stereotype.Service;
+import za.co.dubedivine.networks.model.Question;
 import za.co.dubedivine.networks.model.elastic.ElasticQuestion;
 import za.co.dubedivine.networks.repository.elastic.ElasticQRepo;
 
@@ -14,10 +19,12 @@ import java.util.Set;
 @Service
 public class ElasticQuestionServiceImpl implements ElasticQuestionService {
 
+    private final ElasticsearchTemplate elasticsearchTemplate;
     private ElasticQRepo elasticQRepo;
 
-    public ElasticQuestionServiceImpl(ElasticQRepo elasticQRepo) {
+    public ElasticQuestionServiceImpl(ElasticQRepo elasticQRepo, ElasticsearchTemplate elasticsearchTemplate) {
         this.elasticQRepo = elasticQRepo;
+        this.elasticsearchTemplate = elasticsearchTemplate;
     }
 
     @Override
@@ -27,19 +34,43 @@ public class ElasticQuestionServiceImpl implements ElasticQuestionService {
 
     @Override
     public List<ElasticQuestion> search(String q) {
-//        SearchQuery searchQuery = SearchQuery
-//        QueryBuilder queryBuilder = new QueryBuilder().
-        SearchQuery searchQuery = new NativeSearchQueryBuilder()
-                .withQuery(matchQuery("title", articleTitle).minimumShouldMatch("75%"))
-                .build();
-        elasticQRepo.search()
-
-        return Collections.emptyList();
+        QueryBuilder queryBuilder =
+                QueryBuilders
+                        .boolQuery()
+                        .should(
+                                QueryBuilders
+                                        .queryStringQuery(q)
+                                        .lenient(true)
+                                        .field("title")
+                                        .field("body"))
+                        .should(QueryBuilders.queryStringQuery("*"+q+"*")
+                                .lenient(true)
+                                .field("name")
+                                .field("body")
+                        );
+        NativeSearchQuery build = new NativeSearchQueryBuilder().withQuery(queryBuilder).build();
+        return elasticsearchTemplate.queryForList(build, ElasticQuestion.class);
     }
 
     @Override
-    public Set<ElasticQuestion> findByTitleAndTagsName(String title, String tagName) {
-        return elasticQRepo.findByTitleAndTagsName(title, tagName);
+    public List<ElasticQuestion> findByTitleAndTagsName(String title, String tagName) {
+        //todo: need to find way to query based on child element
+        QueryBuilder queryBuilder =
+                QueryBuilders
+                        .boolQuery()
+                        .must(QueryBuilders.hasParentQuery("Question", QueryBuilders.boolQuery().should(
+                                QueryBuilders
+                                        .queryStringQuery(title)
+                                        .lenient(true)
+                                        .field("title")
+                                        .field("body"))
+                                .should(QueryBuilders.queryStringQuery("*"+title+"*")
+                                        .lenient(true)
+                                        .field("name")
+                                        .field("body")
+                                ) ));
+        NativeSearchQuery build = new NativeSearchQueryBuilder().withQuery(queryBuilder).build();
+       return elasticsearchTemplate.queryForList(build, ElasticQuestion.class);
     }
 
     @Override

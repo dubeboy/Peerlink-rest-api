@@ -15,5 +15,5 @@ public interface ElasticQuestionService {
 
     List<ElasticQuestion> search(String q);
 
-    Set<ElasticQuestion> findByTitleAndTagsName(String title, String tagName);
+    List<ElasticQuestion> findByTitleAndTagsName(String title, String tagName);
 }

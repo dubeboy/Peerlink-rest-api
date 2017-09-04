@@ -46,12 +46,11 @@ import java.util.regex.Pattern
 class QuestionsController(private val repository: QuestionRepository,
                           private val tagRepository: TagRepository,
                           private val elasticQuestionService: ElasticQuestionService,
-                          private val elasticTagRepo: ElasticTagRepo) {
+                          private val elasticTagRepo: ElasticTagRepo,
+                          private val mongoTemplate: MongoTemplate) {
 
     private final val context = AnnotationConfigApplicationContext(AppConfig::class.java)
     private final val taskExecutor = context.getBean("taskExecutor") as ThreadPoolTaskExecutor
-//    val
-
 
     //TODO: Google post vs put
     val allQuestions: List<Question>
@@ -118,9 +117,12 @@ class QuestionsController(private val repository: QuestionRepository,
 
     @PostMapping //for editing
     fun editQuestion(@RequestBody question: Question) {
+        //todo: should also edit the elastic search data
         repository.save(question)
     }
 
+
+    //todo: add some point we need to add the files to elastic + Tika so that we can search thru them
     /**
      * so this function should actually handle both uploading of images and videos
      * and also uploading of many documents
@@ -177,11 +179,7 @@ class QuestionsController(private val repository: QuestionRepository,
     }
 
     private fun getGridFSInstance(): GridFS {
-        // get the application context here and then hook to the mongo template and then you get all connections
-        // session properties
-
-        val mongo = MongoClient("localhost", 27017)
-        val db: DB = mongo.getDB("NetworksDb") // ahh its even deprecated!!!
+        val db: DB = mongoTemplate.db
         return GridFS(db)
     }
 
@@ -234,53 +232,25 @@ class QuestionsController(private val repository: QuestionRepository,
     //the search feature you can search by tag #hello or (question name) or just question
     //todo: should have a go deeper flag signifying that maybe we should also search in the answers as well
     //todo: http://ufasoli.blogspot.co.za/2013/08/mongodb-spring-data-elemmatch-in-field.html
-    @GetMapping("/search")
-    fun search(@RequestParam("text") searchText: String): Set<Question> {
-
-
-        println("the request is this $searchText")
-        val p = Pattern.compile(KUtils.REGEX) //pattern to match the has tags
-        val purifiedSearchText = KUtils.cleanText(searchText)
-        val mongoTemplate = MongoTemplate(Mongo(), "NetworksDb")
-        if (p.toRegex().containsMatchIn(searchText)) {
-            println("in the one phase!")
-            var find: MutableList<Question> = mutableListOf()
-            p.toRegex().findAll(searchText).forEach { tagString ->
-                println("hello $tagString")
-                val questionsByTags = repository.findByTagsName(tagString.value)
-                println(questionsByTags)
-            }
-            return find.toHashSet()
-        } else {  // NO TAGS SEARCH THROUGH ALL THE QUESTIONS BOSS
-            println("in the second phase!")
-            val textCriteria: TextCriteria = TextCriteria
-                    .forDefaultLanguage()
-                    .matchingAny(purifiedSearchText)  //todo should test if this works
-            println("the purifiedSearchText is $purifiedSearchText")
-            val query: Query = TextQuery.queryText(textCriteria)
-                    .sortByScore()
-                    .with(PageRequest(0, 30))   //todo: should change page page params
-            //todo: bad man!!
-            val list: MutableList<Question> = mongoTemplate.find(query, Question::class.java)  //mongo template is deprected
-            return list.toHashSet()
-        }
-    }
-
-    @GetMapping("/e_search") // elastic search
-    fun eSearch(@RequestParam("text") searchText: String): Set<ElasticQuestion> {
+    @GetMapping("/search") // elastic search
+    fun search(@RequestParam("text") searchText: String): Set<ElasticQuestion> {
       return if (!KUtils.hasTags(searchText)) {
-            elasticQuestionService.search(searchText).toSet()
+          println("in 1st phase bro")
+          elasticQuestionService.search(searchText).toSet()
         } else {
-          val findByTitleAndTagsName: Set<ElasticQuestion> = emptySet()
-          val findAll = KUtils.getPattern().toRegex().findAll(searchText).forEach { tagName ->
+          println("in second phase bro")
+          val findByTitleAndBodyTagsName: Set<ElasticQuestion> = emptySet()
+          KUtils.getPattern().toRegex().findAll(searchText).forEach { tagName ->
              val purifiedTitle =  KUtils.cleanText(searchText)
-              findByTitleAndTagsName.plus(elasticQuestionService.findByTitleAndTagsName(purifiedTitle, tagName.value))
+              findByTitleAndBodyTagsName.plus(elasticQuestionService.findByTitleAndTagsName(purifiedTitle, tagName.value))
           }
-          findByTitleAndTagsName
+          findByTitleAndBodyTagsName
         }
     }
 
 
+
+    //todo: should also delete from elastic search
     @DeleteMapping("/{q_id}") //questions/2
     fun deleteQuestion(@PathVariable("q_id") questionId: String) {
         //todo: should actually have another collection called deleted stuff where we move this stuff to

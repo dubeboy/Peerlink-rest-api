@@ -12,5 +12,5 @@ import java.util.Set;
 public interface ElasticQRepo extends ElasticsearchRepository<ElasticQuestion, String> {
     List<ElasticQuestion> findByTagsName(String tagName);
 
-    Set<ElasticQuestion> findByTitleAndTagsName(String title, String tagName);
+    Set<ElasticQuestion> findByTitleAndBodyAndTagsName(String title, String tagName);
 }
