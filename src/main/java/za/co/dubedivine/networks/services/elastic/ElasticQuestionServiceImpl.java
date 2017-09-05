@@ -52,14 +52,14 @@ public class ElasticQuestionServiceImpl implements ElasticQuestionService {
     @Override
     public List<ElasticQuestion> searchWithQuestionTag(String title, String tagName) {
 
+        System.out.println("starting with ###################");
+        System.out.println("the tags is: " + tagName);
+        System.out.println("the title: " + title);
+        System.out.println("starting with ###################");
         //todo: need to find way to query based on child element
         QueryBuilder queryBuilder =
                 QueryBuilders
                         .boolQuery()
-                        .must(QueryBuilders
-                                .queryStringQuery(tagName)
-                                .lenient(false)
-                                .field("tags.name")) //todo: i should be able to query child elements
                         .should(
                                 QueryBuilders
                                         .queryStringQuery(title)
@@ -70,8 +70,13 @@ public class ElasticQuestionServiceImpl implements ElasticQuestionService {
                                 .lenient(true)
                                 .field("name")
                                 .field("body")
-                        );
+                        )
+                        .must(QueryBuilders.nestedQuery("tags",
+                                QueryBuilders.termQuery("tags.name", tagName))
+                        ) //todo: i should be able to query child elements
+                ;
         NativeSearchQuery build = new NativeSearchQueryBuilder().withQuery(queryBuilder).build();
+        //elasticQRepo.findByTitleAndBodyAndTagsName(title, tagName);
         return elasticsearchTemplate.queryForList(build, ElasticQuestion.class);
     }
 

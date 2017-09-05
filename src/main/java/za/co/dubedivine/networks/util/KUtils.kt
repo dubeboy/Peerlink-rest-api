@@ -30,15 +30,16 @@ object KUtils {
     fun getCleanTextAndTags(text: String): Pair<String, Set<String>> {
         println("the text is $text")
         val p = getPattern()
-        val strings = mutableSetOf<String>()
-        val sequence = p.toRegex().findAll(text).distinct()
-        sequence.forEach {
-            println("yeye thete are tags ${it.value}")
-            strings.add(it.value)
+        val tags = mutableSetOf<String>()
+        val sequenceOfTags = p.toRegex().findAll(text).distinct()
+        sequenceOfTags.forEach {
+            val tag = it.value.substringAfter('#')
+            println("yeye thete are tags $tag ")
+            tags.add(tag)
         }
-        val  clean =  p.matcher(text).replaceAll(" ")
-        println("these are the tags fam $strings")
-        return Pair(clean, strings)
+        val  cleanSearchText =  p.matcher(text).replaceAll(" ")
+        println("these are the tags fam $tags")
+        return Pair(cleanSearchText, tags)
     }
 
     fun hasTags(text: String): Boolean {
