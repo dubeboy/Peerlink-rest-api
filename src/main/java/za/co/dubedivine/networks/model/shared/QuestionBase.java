@@ -15,10 +15,10 @@ public abstract class QuestionBase {
     // protected because it has a setter in the Elastic question child class
     @Id
     protected String id;
-    //    @Indexed  //todo: should somehow be able to search fast with title and body
-    @TextIndexed
+        @Indexed  //todo: should somehow be able to search fast with title and body
+//    @TextIndexed
     private String title;
-    @TextIndexed
+//    @TextIndexed
     private String body;
     private long votes;
     private List<Comment> comments;

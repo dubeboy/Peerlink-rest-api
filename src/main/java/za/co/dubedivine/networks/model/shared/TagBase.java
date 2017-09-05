@@ -2,19 +2,19 @@ package za.co.dubedivine.networks.model.shared;
 
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.index.Indexed;
+import za.co.dubedivine.networks.model.Question;
 import za.co.dubedivine.networks.model.Tag;
 
 import java.util.Date;
+import java.util.List;
 import java.util.Set;
 
 public abstract class TagBase {
-    @Id
-    private String id;
     @Indexed
-    private String name;
+    @Id
+    private String name;  // name is the ID means
     private Date createAt = new Date();
-    private Set<String> questionIds;
-
+    private List<Question> questions;
     public TagBase(String name) {
         this.name = name;
     }
@@ -32,23 +32,15 @@ public abstract class TagBase {
         return createAt;
     }
 
-    public void setId(String id) {
-        this.id = id;
+    public List<Question> getQuestions() {
+        return questions;
     }
 
-    public String getId() {
-        return id;
+    public void addQuestion(Question q) {
+        questions.add(q);
     }
 
-    public Set<String> getQuestionIds() {
-        return questionIds;
-    }
-
-    public void setQuestionIds(Set<String> tagIds) {
-        this.questionIds = tagIds;
-    }
-
-    public void addQuestionIdToTag(String id) {
-        this.questionIds.add(id);
+    public void setQuestions(List<Question> questions) {
+        this.questions = questions;
     }
 }

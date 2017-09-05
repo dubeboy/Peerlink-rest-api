@@ -12,6 +12,6 @@ import java.util.List;
 
 @Repository
 public interface QuestionRepository extends MongoRepository<Question, String>, QueryDslPredicateExecutor<Question> {
-   // @Query("question.find({\"tags.name\": \"?0\")")
+//    @Query("question.find({\"tags.name\": \"?0\")")
     List<Question> findByTagsName(String tags);
 }

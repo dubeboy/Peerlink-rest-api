@@ -1,20 +1,13 @@
 package za.co.dubedivine.networks.controller
 
-import com.mongodb.DB
-import com.mongodb.Mongo
-import com.mongodb.MongoClient
 import com.mongodb.gridfs.GridFS
 import com.mongodb.gridfs.GridFSDBFile
 import com.mongodb.gridfs.GridFSInputFile
 import org.springframework.context.annotation.AnnotationConfigApplicationContext
 import org.springframework.core.io.InputStreamResource
 import org.springframework.core.io.Resource
-import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Sort
 import org.springframework.data.mongodb.core.MongoTemplate
-import org.springframework.data.mongodb.core.query.Query
-import org.springframework.data.mongodb.core.query.TextCriteria
-import org.springframework.data.mongodb.core.query.TextQuery
 import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
@@ -36,7 +29,6 @@ import za.co.dubedivine.networks.repository.elastic.ElasticTagRepo
 import za.co.dubedivine.networks.services.elastic.ElasticQuestionService
 import za.co.dubedivine.networks.util.KUtils
 import java.util.*
-import java.util.regex.Pattern
 
 //todo: handling invalid data an dublicate data
 //todo: split tags and questions
@@ -59,42 +51,32 @@ class QuestionsController(private val repository: QuestionRepository,
             val sort = Sort(Sort.Direction.DESC, "createdAt")
             return repository.findAll(sort)
         }
+
     //needs a major refactoring
     @PutMapping //adding anew entity
     fun addQuestion(@RequestBody question: Question): ResponseEntity<Any> {
         var elasticTagToSave: ElasticTag? = null
+        question.tags.forEach {
+            val tag = tagRepository.findFirstByName(it.name)
 
+            //todo: bad bro
 
-        question.tags.forEach { questionItem ->
-            val tag = tagRepository.findFirstByName(questionItem.name)
-
-            fun check() = if (questionItem.questionIds == null) {
-                questionItem.questionIds = setOf(questionItem.id)
-            } else {
-                tag.addQuestionIdToTag(questionItem.id)
-            }
-
-
-            val instantiateElasticTag : (savedTag: Tag) -> ElasticTag = {
+            val instantiateElasticTag: (savedTag: Tag) -> ElasticTag = {
                 val elasticTag = ElasticTag(it.name)
-                elasticTag.questionIds = it.questionIds
-                elasticTag.id = it.id
+                elasticTag.questions = it.questions
                 elasticTag
             }
 
-            if (tag != null) { // this means that the tag has already been created
+            elasticTagToSave = if (tag != null) {
+                // this means that the tag has already been created
                 //we dont have to do anything more here all we have to do is
-                // we just have to set the ID of this tag in questionItem to the one that exits
-                questionItem.id = tag.id
-                check()
-                val savedTag = tagRepository.save(tag)
-                elasticTagToSave = instantiateElasticTag(savedTag)
-
+                val foundTag = tagRepository.findFirstByName(it.name)
+                foundTag.addQuestion(question)
+                tagRepository.save(foundTag)
+                instantiateElasticTag(foundTag)
             } else { // else create the tag
-                check()
-                val savedTag = tagRepository.save(questionItem)
-                questionItem.id = savedTag.id  // after creating the tag combine the tag wth the Q
-                elasticTagToSave = instantiateElasticTag(savedTag)
+                val savedTag = tagRepository.save(it)
+                instantiateElasticTag(savedTag)
             }
         }
         val q = repository.insert(question)
@@ -132,7 +114,6 @@ class QuestionsController(private val repository: QuestionRepository,
                  @RequestParam("file") files: List<MultipartFile>): ResponseEntity<StatusResponseEntity> {
         val question = repository.findOne(questionId)
         if ((question) != null) {
-            //todo: i gues this code is bad because it open a nother connection it was not supposed to do that!!
             val fs = getGridFSInstance()
 
             println("the bucket name is:  ${fs.bucketName} and the db:  ${fs.db}")
@@ -178,11 +159,9 @@ class QuestionsController(private val repository: QuestionRepository,
 
     }
 
-    private fun getGridFSInstance(): GridFS {
-        val db: DB = mongoTemplate.db
-        return GridFS(db)
-    }
+    private fun getGridFSInstance() = GridFS(mongoTemplate.db)
 
+    //todo: should append type of file here as well
     //function to get the files for a specific question
     @GetMapping("/{q_id}/files")
     fun getFile(@PathVariable("q_id") questionId: String,
@@ -190,64 +169,53 @@ class QuestionsController(private val repository: QuestionRepository,
         println("the question ID is $questionId and the type is $type")
         val fs = getGridFSInstance()
 //        val question = repository.findOne(questionId)
-        return when (type) {
-            "F" -> {
-                val list: MutableList<GridFSDBFile> = fs.find(questionId)
-                list.forEach {
 
-                }
-                ResponseEntity.ok().body(null)
-            } // F for file
-            else -> {  // i guess this wil work for any file
-                val findOne: GridFSDBFile = fs.findOne(questionId)
-                val resource = InputStreamResource(findOne.inputStream)
-                println("found one $resource")
+        val findOne: GridFSDBFile = fs.findOne(questionId)
+        val resource = InputStreamResource(findOne.inputStream)
+        println("found one $resource")
 //                val headers = ""
-                ResponseEntity.ok()
-                        .contentLength(findOne.length)
-                        .contentType(MediaType.parseMediaType("application/octet-stream"))
-                        .body(resource)
-            } // M for media
-        }
+        return ResponseEntity.ok()
+                .contentLength(findOne.length)
+                .contentType(MediaType.parseMediaType("application/octet-stream"))
+                .body(resource)
     }
 
-    @GetMapping("/tag_search?t_id={t_id}")
-    fun getTagQuestions(@PathVariable("t_id") tagId: String): Set<Question> {
-        val tag = tagRepository.findFirstByName(tagId)
-        val questions = repository.findAll()  //todo: needs to be fixed asap
-        val ques = hashSetOf<Question>()
-        questions.forEach { q ->
-            val tags = q.tags
-            for (it in tags) {
-                if (it == tag) {
-                    ques.add(q)
-                    break
-                }
-            }
-        }
-        return ques
+    @GetMapping("/tag_search?t_id={tag_name}")
+    fun getTagQuestions(@PathVariable("tag_name") tagName: String): Set<Question> {
+        return repository.findByTagsName(tagName).toSet()
     }
 
     //todo:use elastic search please link is here https://www.mkyong.com/spring-boot/spring-boot-spring-data-elasticsearch-example/
-    //the search feature you can search by tag #hello or (question name) or just question
-    //todo: should have a go deeper flag signifying that maybe we should also search in the answers as well
-    //todo: http://ufasoli.blogspot.co.za/2013/08/mongodb-spring-data-elemmatch-in-field.html
+//the search feature you can search by tag #hello or (question name) or just question
+//todo: should have a go deeper flag signifying that maybe we should also search in the answers as well
+//todo: http://ufasoli.blogspot.co.za/2013/08/mongodb-spring-data-elemmatch-in-field.html
     @GetMapping("/search") // elastic search
     fun search(@RequestParam("text") searchText: String): Set<ElasticQuestion> {
-      return if (!KUtils.hasTags(searchText)) {
-          println("in 1st phase bro")
-          elasticQuestionService.search(searchText).toSet()
+        if (!KUtils.hasTags(searchText)) {
+            println("in 1st phase bro")
+           return elasticQuestionService.search(searchText).toSet()
         } else {
-          println("in second phase bro")
-          val findByTitleAndBodyTagsName: Set<ElasticQuestion> = emptySet()
-          KUtils.getPattern().toRegex().findAll(searchText).forEach { tagName ->
-             val purifiedTitle =  KUtils.cleanText(searchText)
-              findByTitleAndBodyTagsName.plus(elasticQuestionService.findByTitleAndTagsName(purifiedTitle, tagName.value))
-          }
-          findByTitleAndBodyTagsName
+            println("in second phase bro")
+            val collectedQuestions: Set<ElasticQuestion> = emptySet()
+            val purifiedTitle = KUtils.cleanText(searchText)
+            val list: MutableList<ElasticQuestion> = elasticQuestionService.search(purifiedTitle)  // todo: should actually come prepared from the elastic
+
+            //todo: worst code i have ever written
+            val tags = KUtils.getPattern().toRegex().findAll(searchText)
+            println("the code is here")
+            for (tag in tags) {
+                for (q in list) {
+                    for (it in q.tags) {
+                        if (it.name == tag.value) {
+                            collectedQuestions.plus(q)
+                            break
+                        }
+                    }
+                }
+            }
+           return collectedQuestions
         }
     }
-
 
 
     //todo: should also delete from elastic search

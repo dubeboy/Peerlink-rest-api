@@ -2,19 +2,14 @@ package za.co.dubedivine.networks.services.elastic;
 
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.elasticsearch.core.ElasticsearchTemplate;
 import org.springframework.data.elasticsearch.core.query.NativeSearchQuery;
 import org.springframework.data.elasticsearch.core.query.NativeSearchQueryBuilder;
-import org.springframework.data.elasticsearch.core.query.SearchQuery;
 import org.springframework.stereotype.Service;
-import za.co.dubedivine.networks.model.Question;
 import za.co.dubedivine.networks.model.elastic.ElasticQuestion;
 import za.co.dubedivine.networks.repository.elastic.ElasticQRepo;
 
-import java.util.Collections;
 import java.util.List;
-import java.util.Set;
 
 @Service
 public class ElasticQuestionServiceImpl implements ElasticQuestionService {
@@ -43,7 +38,7 @@ public class ElasticQuestionServiceImpl implements ElasticQuestionService {
                                         .lenient(true)
                                         .field("title")
                                         .field("body"))
-                        .should(QueryBuilders.queryStringQuery("*"+q+"*")
+                        .should(QueryBuilders.queryStringQuery("*" + q + "*")
                                 .lenient(true)
                                 .field("name")
                                 .field("body")
@@ -58,19 +53,23 @@ public class ElasticQuestionServiceImpl implements ElasticQuestionService {
         QueryBuilder queryBuilder =
                 QueryBuilders
                         .boolQuery()
-                        .must(QueryBuilders.hasParentQuery("Question", QueryBuilders.boolQuery().should(
+                        .must(QueryBuilders
+                                .queryStringQuery(tagName)
+                                .lenient(true)
+                                .field("tags.name"))
+                        .should(
                                 QueryBuilders
                                         .queryStringQuery(title)
                                         .lenient(true)
                                         .field("title")
                                         .field("body"))
-                                .should(QueryBuilders.queryStringQuery("*"+title+"*")
-                                        .lenient(true)
-                                        .field("name")
-                                        .field("body")
-                                ) ));
+                        .should(QueryBuilders.queryStringQuery("*" + title + "*")  // wild card matching
+                                .lenient(true)
+                                .field("name")
+                                .field("body")
+                        );
         NativeSearchQuery build = new NativeSearchQueryBuilder().withQuery(queryBuilder).build();
-       return elasticsearchTemplate.queryForList(build, ElasticQuestion.class);
+        return elasticsearchTemplate.queryForList(build, ElasticQuestion.class);
     }
 
     @Override
