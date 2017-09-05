@@ -11,9 +11,11 @@ public interface ElasticQuestionService {
 
     void delete(ElasticQuestion book);
 
+    void deleteAll();
+
     List<ElasticQuestion> findByTag(String tagName);
 
     List<ElasticQuestion> search(String q);
 
-    List<ElasticQuestion> findByTitleAndTagsName(String title, String tagName);
+    List<ElasticQuestion> searchWithQuestionTag(String title, String tagName);
 }

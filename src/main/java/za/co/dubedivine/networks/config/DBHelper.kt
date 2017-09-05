@@ -46,6 +46,7 @@ class DBHelper(private val questionRepository: QuestionRepository,
         }
 
 
+        elasticQuestionService.deleteAll()
         run.forEach {
             val el = ElasticQuestion(it.title, it.body, it.votes, it.tags, it.type)
             el.id = it.id

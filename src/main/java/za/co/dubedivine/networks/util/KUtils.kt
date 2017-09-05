@@ -1,6 +1,7 @@
 package za.co.dubedivine.networks.util
 
 import com.sun.org.apache.xpath.internal.operations.Bool
+import com.sun.xml.internal.fastinfoset.util.StringArray
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import za.co.dubedivine.networks.model.responseEntity.StatusResponseEntity
@@ -8,7 +9,7 @@ import java.util.regex.Pattern
 
 object KUtils {
 
-    const val REGEX = "#(\\d*[A-Za-z_]+\\w*)\\b(?!;)"
+    private const val REGEX = "#(\\d*[A-Za-z_]+\\w*)\\b(?!;)"
     enum class CONTENT_TYPE {
         VID_IMG, DOC
     }
@@ -26,9 +27,18 @@ object KUtils {
                if(status) HttpStatus.CREATED else  HttpStatus.BAD_REQUEST)
     }
 
-    fun cleanText(text: String): String {
-        val p = Pattern.compile(REGEX)
-        return p.matcher(text).replaceAll(" ")
+    fun getCleanTextAndTags(text: String): Pair<String, Set<String>> {
+        println("the text is $text")
+        val p = getPattern()
+        val strings = mutableSetOf<String>()
+        val sequence = p.toRegex().findAll(text).distinct()
+        sequence.forEach {
+            println("yeye thete are tags ${it.value}")
+            strings.add(it.value)
+        }
+        val  clean =  p.matcher(text).replaceAll(" ")
+        println("these are the tags fam $strings")
+        return Pair(clean, strings)
     }
 
     fun hasTags(text: String): Boolean {

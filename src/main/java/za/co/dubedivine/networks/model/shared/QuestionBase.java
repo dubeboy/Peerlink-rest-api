@@ -32,6 +32,10 @@ public abstract class QuestionBase {
     private List<Media> files; //this can be combined with video dwag
     private Date createdAt = new Date();
 
+    public QuestionBase() {
+
+    }
+
 
     public QuestionBase(String title, String body, long votes, List<Tag> tags, String type) {
         this.title = title;

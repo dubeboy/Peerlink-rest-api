@@ -18,6 +18,9 @@ import java.util.Set;
 @Document
 public class Tag extends TagBase {
 
+    public Tag() {
+    }
+
     public Tag(String name) {
         super(name);
     }

@@ -191,32 +191,25 @@ class QuestionsController(private val repository: QuestionRepository,
 //todo: http://ufasoli.blogspot.co.za/2013/08/mongodb-spring-data-elemmatch-in-field.html
     @GetMapping("/search") // elastic search
     fun search(@RequestParam("text") searchText: String): Set<ElasticQuestion> {
+        println("the search term is " + searchText)
         if (!KUtils.hasTags(searchText)) {
             println("in 1st phase bro")
-           return elasticQuestionService.search(searchText).toSet()
+            return elasticQuestionService.search(searchText).toSet()
         } else {
             println("in second phase bro")
-            val collectedQuestions: Set<ElasticQuestion> = emptySet()
-            val purifiedTitle = KUtils.cleanText(searchText)
-            val list: MutableList<ElasticQuestion> = elasticQuestionService.search(purifiedTitle)  // todo: should actually come prepared from the elastic
-
-            //todo: worst code i have ever written
-            val tags = KUtils.getPattern().toRegex().findAll(searchText)
-            println("the code is here")
-            for (tag in tags) {
-                for (q in list) {
-                    for (it in q.tags) {
-                        if (it.name == tag.value) {
-                            collectedQuestions.plus(q)
-                            break
-                        }
-                    }
-                }
+            val (purifiedTitle, tags) = KUtils.getCleanTextAndTags(searchText)
+            val list: MutableList<ElasticQuestion> = mutableListOf()
+            println("the purified text is $purifiedTitle")
+            println("there are ${tags.size} tags so looping ")
+            tags.forEachIndexed { index, tag ->
+                println("loop $index")
+                val elasticQuestions = elasticQuestionService.searchWithQuestionTag(purifiedTitle, tag)  //todo: should use Rx
+                println("the list is $elasticQuestions")
+                list.addAll(elasticQuestions)
             }
-           return collectedQuestions
+            return list.toSet()
         }
     }
-
 
     //todo: should also delete from elastic search
     @DeleteMapping("/{q_id}") //questions/2

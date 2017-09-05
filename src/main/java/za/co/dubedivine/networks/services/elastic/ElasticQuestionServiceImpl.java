@@ -5,10 +5,12 @@ import org.elasticsearch.index.query.QueryBuilders;
 import org.springframework.data.elasticsearch.core.ElasticsearchTemplate;
 import org.springframework.data.elasticsearch.core.query.NativeSearchQuery;
 import org.springframework.data.elasticsearch.core.query.NativeSearchQueryBuilder;
+import org.springframework.data.querydsl.QueryDslPredicateExecutor;
 import org.springframework.stereotype.Service;
 import za.co.dubedivine.networks.model.elastic.ElasticQuestion;
 import za.co.dubedivine.networks.repository.elastic.ElasticQRepo;
 
+import javax.sql.rowset.Predicate;
 import java.util.List;
 
 @Service
@@ -48,15 +50,16 @@ public class ElasticQuestionServiceImpl implements ElasticQuestionService {
     }
 
     @Override
-    public List<ElasticQuestion> findByTitleAndTagsName(String title, String tagName) {
+    public List<ElasticQuestion> searchWithQuestionTag(String title, String tagName) {
+
         //todo: need to find way to query based on child element
         QueryBuilder queryBuilder =
                 QueryBuilders
                         .boolQuery()
                         .must(QueryBuilders
                                 .queryStringQuery(tagName)
-                                .lenient(true)
-                                .field("tags.name"))
+                                .lenient(false)
+                                .field("tags.name")) //todo: i should be able to query child elements
                         .should(
                                 QueryBuilders
                                         .queryStringQuery(title)
@@ -80,5 +83,10 @@ public class ElasticQuestionServiceImpl implements ElasticQuestionService {
     @Override
     public void delete(ElasticQuestion question) {
         elasticQRepo.delete(question);
+    }
+
+    @Override
+    public void deleteAll() {
+        elasticQRepo.deleteAll();
     }
 }
