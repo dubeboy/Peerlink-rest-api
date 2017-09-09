@@ -43,7 +43,6 @@ class QuestionsController(private val repository: QuestionRepository,
 
     private final val context = AnnotationConfigApplicationContext(AppConfig::class.java)
     private final val taskExecutor = context.getBean("taskExecutor") as ThreadPoolTaskExecutor
-
     //TODO: Google post vs put
     val allQuestions: List<Question>
         @GetMapping
@@ -216,5 +215,6 @@ class QuestionsController(private val repository: QuestionRepository,
     fun deleteQuestion(@PathVariable("q_id") questionId: String) {
         //todo: should actually have another collection called deleted stuff where we move this stuff to
         repository.delete(questionId)
+
     }
 }
