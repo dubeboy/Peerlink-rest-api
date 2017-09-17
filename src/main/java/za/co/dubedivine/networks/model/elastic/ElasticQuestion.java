@@ -1,17 +1,23 @@
 package za.co.dubedivine.networks.model.elastic;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
+import org.springframework.data.elasticsearch.annotations.CompletionField;
 import org.springframework.data.elasticsearch.annotations.Document;
+import org.springframework.data.elasticsearch.core.completion.Completion;
 import za.co.dubedivine.networks.model.Tag;
 import za.co.dubedivine.networks.model.shared.QuestionBase;
 
 import java.util.List;
 
-@Document(indexName = "divine", type = "questions")
+@JsonInclude(value = JsonInclude.Include.NON_NULL) // super handy dwag for non-null values!!!!
+@Document(indexName = "divine", type = "questions", refreshInterval = "-1")
 public class ElasticQuestion extends QuestionBase {
 
-    ElasticQuestion() {
 
-    }
+    @CompletionField //this requires the Non Null @Json Includes
+    private Completion suggest; //todo: for suggestions
+
+    ElasticQuestion() { }
 
     public void setId(String id) {
         super.id = id;
@@ -21,4 +27,11 @@ public class ElasticQuestion extends QuestionBase {
         super(title, body, votes, tags, type);
     }
 
+    public Completion getSuggest() {
+        return suggest;
+    }
+
+    public void setSuggest(Completion suggest) {
+        this.suggest = suggest;
+    }
 }

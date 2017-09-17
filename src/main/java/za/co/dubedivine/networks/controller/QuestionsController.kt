@@ -57,25 +57,17 @@ class QuestionsController(private val repository: QuestionRepository,
         var elasticTagToSave: ElasticTag? = null
         question.tags.forEach {
             val tag = tagRepository.findFirstByName(it.name)
-
             //todo: bad bro
-
-            val instantiateElasticTag: (savedTag: Tag) -> ElasticTag = {
-                val elasticTag = ElasticTag(it.name)
-                elasticTag.questions = it.questions
-                elasticTag
-            }
-
             elasticTagToSave = if (tag != null) {
                 // this means that the tag has already been created
-                //we dont have to do anything more here all we have to do is
+                //we don`t have to do anything more here all we have to do is
                 val foundTag = tagRepository.findFirstByName(it.name)
                 foundTag.addQuestion(question)
                 tagRepository.save(foundTag)
-                instantiateElasticTag(foundTag)
+                KUtils.instantiateElasticTag(foundTag)
             } else { // else create the tag
                 val savedTag = tagRepository.save(it)
-                instantiateElasticTag(savedTag)
+                KUtils.instantiateElasticTag(savedTag)
             }
         }
         val q = repository.insert(question)

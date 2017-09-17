@@ -8,7 +8,7 @@ import za.co.dubedivine.networks.model.elastic.ElasticQuestion
 @Repository
 interface ElasticQRepo : ElasticsearchRepository<ElasticQuestion, String> {
     fun findByTagsName(tagName: String): List<ElasticQuestion>
-
+//
 //    @Query(""" {
 //  "query": {
 //    "bool": {
@@ -44,6 +44,7 @@ interface ElasticQRepo : ElasticsearchRepository<ElasticQuestion, String> {
 //    }
 //  }
 //}
-//    """)
+//   """)
+    @Query("{\"bool\" : {\"must\" : {\"term\" : {\"message\" : \"?0\"}}}}")
     fun findByTitleAndBodyAndTagsName(title: String, tagName: String): Set<ElasticQuestion>
 }

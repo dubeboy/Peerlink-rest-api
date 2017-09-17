@@ -12,25 +12,18 @@ import java.util.List;
 
 public abstract class QuestionBase {
 
-    // protected because it has a setter in the Elastic question child class
-    @Id
-    protected String id;
-        @Indexed  //todo: should somehow be able to search fast with title and body
-//    @TextIndexed
-    private String title;
-//    @TextIndexed
+    protected @Id String id;  // protected because it has a setter in the Elastic question child class
+    private @Indexed  String title;
     private String body;
     private long votes;
-    private List<Comment> comments;
+    private @Field(type = FieldType.Nested) List<Comment> comments;
     private List<Answer> answers;
-    @Indexed
-    @Field(type = FieldType.Nested)
-    private List<Tag> tags;  //todo: bad it should be mapping!!
+    private @Indexed @Field(type = FieldType.Nested) List<Tag> tags;  //todo: bad it should be mapping!!
     private User user; // the user the
     private String type;
-    private Media video;
+    private @Field(type = FieldType.Nested) Media video;
     private List<Media> files; //this can be combined with video dwag
-    private Date createdAt = new Date();
+    private @Field(type= FieldType.Date) Date createdAt = new Date();
 
     public QuestionBase() {
 

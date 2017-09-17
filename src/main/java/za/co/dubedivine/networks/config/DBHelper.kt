@@ -1,6 +1,7 @@
 package za.co.dubedivine.networks.config
 
 import org.springframework.boot.CommandLineRunner
+import org.springframework.data.elasticsearch.core.ElasticsearchOperations
 import org.springframework.stereotype.Component
 import za.co.dubedivine.networks.model.Answer
 import za.co.dubedivine.networks.model.Comment
@@ -9,13 +10,22 @@ import za.co.dubedivine.networks.model.Tag
 import za.co.dubedivine.networks.model.elastic.ElasticQuestion
 import za.co.dubedivine.networks.repository.QuestionRepository
 import za.co.dubedivine.networks.services.elastic.ElasticQuestionService
+import javax.annotation.PreDestroy
 
 /**
  * Created by divine on 2017/08/11.
  */
 @Component
 class DBHelper(private val questionRepository: QuestionRepository,
-               private val elasticQuestionService: ElasticQuestionService) : CommandLineRunner {
+               private val elasticQuestionService: ElasticQuestionService,
+               private val elasticSearchOperations: ElasticsearchOperations) : CommandLineRunner {
+
+
+    @PreDestroy
+    fun deleteIndex() {
+        println("calling this one here")
+        elasticSearchOperations.deleteIndex(ElasticQuestion::class.java)
+    }
 
     @Throws(Exception::class)
     override fun run(vararg strings: String) {
@@ -45,10 +55,12 @@ class DBHelper(private val questionRepository: QuestionRepository,
             save(arrayListOf(questionA, questionB))
         }
 
-
+        println("calling this one here")
         elasticQuestionService.deleteAll()
+        elasticSearchOperations.refresh(ElasticQuestion::class.java)
         run.forEach {
             val el = ElasticQuestion(it.title, it.body, it.votes, it.tags, it.type)
+            el.answers = it.answers
             el.id = it.id
             elasticQuestionService.save(el)
         }

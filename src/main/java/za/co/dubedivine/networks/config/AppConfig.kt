@@ -11,7 +11,7 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor
 class AppConfig {
     @Bean
     fun taskExecutor(): ThreadPoolTaskExecutor {
-        val pool: ThreadPoolTaskExecutor = ThreadPoolTaskExecutor()
+        val pool = ThreadPoolTaskExecutor()
         pool.corePoolSize = 5
         pool.maxPoolSize = 5
         pool.setWaitForTasksToCompleteOnShutdown(true)
