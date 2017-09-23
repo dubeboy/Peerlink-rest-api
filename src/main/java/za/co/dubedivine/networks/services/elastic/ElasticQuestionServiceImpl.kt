@@ -1,5 +1,6 @@
 package za.co.dubedivine.networks.services.elastic
 
+import org.elasticsearch.index.query.FuzzyQueryBuilder
 import org.elasticsearch.index.query.QueryBuilders
 import org.springframework.data.elasticsearch.core.ElasticsearchTemplate
 import org.springframework.data.elasticsearch.core.query.NativeSearchQueryBuilder
@@ -8,6 +9,9 @@ import za.co.dubedivine.networks.model.Question
 import za.co.dubedivine.networks.model.elastic.ElasticQuestion
 import za.co.dubedivine.networks.repository.elastic.ElasticQRepo
 
+
+
+//there is a problem when a person searches for a space it return all the results
 @Service
 class ElasticQuestionServiceImpl(private val elasticQRepo: ElasticQRepo,
                                  private val elasticsearchTemplate: ElasticsearchTemplate) : ElasticQuestionService {
@@ -61,6 +65,8 @@ class ElasticQuestionServiceImpl(private val elasticQRepo: ElasticQRepo,
         //elasticQRepo.findByTitleAndBodyAndTagsName(title, tagName);
         return elasticsearchTemplate.queryForList(build, ElasticQuestion::class.java)
     }
+
+
 
     override fun save(question: ElasticQuestion): ElasticQuestion {
         return elasticQRepo.save(question)

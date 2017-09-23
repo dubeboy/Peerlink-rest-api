@@ -5,9 +5,11 @@ import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 import za.co.dubedivine.networks.model.Tag
 import za.co.dubedivine.networks.model.User
+import za.co.dubedivine.networks.model.elastic.ElasticTag
 import za.co.dubedivine.networks.repository.TagRepository
 import za.co.dubedivine.networks.repository.UserRepository
 import za.co.dubedivine.networks.model.responseEntity.StatusResponseEntity
+import za.co.dubedivine.networks.services.elastic.ElasticTagService
 
 /**
  * Created by divine on 2017/08/11.
@@ -15,11 +17,12 @@ import za.co.dubedivine.networks.model.responseEntity.StatusResponseEntity
 @RestController
 @RequestMapping("/tags")
 class TagController(private val tagRepository: TagRepository,
-                    private val userRepository: UserRepository) {
+                    private val userRepository: UserRepository,
+                    private val elasticTagService: ElasticTagService) {
 
 
-    val all: List<Tag>
-        @GetMapping("/all")
+    val getAll: List<Tag>
+        @GetMapping
         get() = tagRepository.findAll()
 
     @PostMapping("/{t_id}/subscribe/{u_id}")
@@ -62,5 +65,15 @@ class TagController(private val tagRepository: TagRepository,
     fun delete(@PathVariable("id") id: String) {
         //todo: should also go the tags part and then delete the reference
         tagRepository.delete(id)
+    }
+
+    @GetMapping("/suggest")
+    fun suggestTags(@RequestParam("tag") tag: String): List<ElasticTag> {
+       return elasticTagService.suggestTag(tag)
+    }
+
+    @GetMapping("/suggest2")
+    fun suggestTags2(@RequestParam("tag") tag: String): List<ElasticTag> {
+        return elasticTagService.suggestTag2(tag)
     }
 }

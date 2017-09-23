@@ -3,7 +3,7 @@ package za.co.dubedivine.networks.services.elastic
 import za.co.dubedivine.networks.model.Question
 import za.co.dubedivine.networks.model.elastic.ElasticQuestion
 
-
+// there is a problem when a person enters space charectors it matched every thing
 interface ElasticQuestionService {
     fun save(book: ElasticQuestion): ElasticQuestion
 
@@ -20,4 +20,6 @@ interface ElasticQuestionService {
     fun suggestQuestion(tile: String): List<ElasticQuestion>
 
     fun saveQuestionToElastic(question: Question): ElasticQuestion
+
+
 }

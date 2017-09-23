@@ -67,7 +67,7 @@ class QuestionsController(private val repository: QuestionRepository,
                 KUtils.instantiateElasticTag(foundTag)
             } else { // else create the tag
                 val savedTag = tagRepository.save(it)
-                KUtils.instantiateElasticTag(savedTag)
+                KUtils.instantiateElasticTag(savedTag) // the last line returned!!s
             }
         }
         val q = repository.insert(question)
