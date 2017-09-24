@@ -7,6 +7,8 @@ import za.co.dubedivine.networks.model.shared.TagBase;
 @Document(indexName = "divine_tags", type = "tags")
 public class ElasticTag extends TagBase {
 
+    public ElasticTag() { }
+
     public ElasticTag(String name) {
         super(name);
     }

@@ -69,4 +69,8 @@ object KUtils {
         return getContext().getBean("taskExecutor") as ThreadPoolTaskExecutor
 
     }
+
+    fun cleanTag(tag: String): String {
+        return tag.substringAfter('#')
+    }
 }

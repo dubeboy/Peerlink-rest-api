@@ -19,7 +19,7 @@ public abstract class TagBase {
         this.name = name;
     }
 
-    public TagBase() {
+    protected TagBase() {
 
     }
 

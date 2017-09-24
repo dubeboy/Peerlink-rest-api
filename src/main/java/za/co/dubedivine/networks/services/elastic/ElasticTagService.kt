@@ -7,6 +7,5 @@ interface ElasticTagService {
 
     fun suggestTag(tagName: String): List<ElasticTag>
 
-    fun suggestTag2(tagName: String): List<ElasticTag>
 
 }

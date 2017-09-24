@@ -4,12 +4,12 @@ import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 import za.co.dubedivine.networks.model.Tag
-import za.co.dubedivine.networks.model.User
 import za.co.dubedivine.networks.model.elastic.ElasticTag
 import za.co.dubedivine.networks.repository.TagRepository
 import za.co.dubedivine.networks.repository.UserRepository
 import za.co.dubedivine.networks.model.responseEntity.StatusResponseEntity
 import za.co.dubedivine.networks.services.elastic.ElasticTagService
+import za.co.dubedivine.networks.util.KUtils
 
 /**
  * Created by divine on 2017/08/11.
@@ -69,11 +69,7 @@ class TagController(private val tagRepository: TagRepository,
 
     @GetMapping("/suggest")
     fun suggestTags(@RequestParam("tag") tag: String): List<ElasticTag> {
-       return elasticTagService.suggestTag(tag)
-    }
-
-    @GetMapping("/suggest2")
-    fun suggestTags2(@RequestParam("tag") tag: String): List<ElasticTag> {
-        return elasticTagService.suggestTag2(tag)
+        println("here is the passed in tag bro $tag")
+        return elasticTagService.suggestTag(KUtils.cleanTag(tag))
     }
 }
