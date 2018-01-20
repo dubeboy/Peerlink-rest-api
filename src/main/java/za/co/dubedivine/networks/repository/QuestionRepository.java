@@ -11,7 +11,7 @@ import za.co.dubedivine.networks.model.Tag;
 import java.util.List;
 
 @Repository
-public interface QuestionRepository extends MongoRepository<Question, String>, QueryDslPredicateExecutor<Question> {
+public interface QuestionRepository extends MongoRepository<Question, String>{
 //    @Query("question.find({\"tags.name\": \"?0\")")
     List<Question> findByTagsName(String tags);
 }

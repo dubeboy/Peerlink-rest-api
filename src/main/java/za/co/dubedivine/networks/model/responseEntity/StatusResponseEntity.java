@@ -1,5 +1,6 @@
 package za.co.dubedivine.networks.model.responseEntity;
 
+//standard error msg class
 public class StatusResponseEntity {
     private boolean status;
     private String message;

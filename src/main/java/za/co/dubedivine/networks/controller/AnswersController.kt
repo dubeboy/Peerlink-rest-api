@@ -1,6 +1,5 @@
 package za.co.dubedivine.networks.controller
 
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor
@@ -10,7 +9,6 @@ import za.co.dubedivine.networks.model.responseEntity.StatusResponseEntity
 import za.co.dubedivine.networks.repository.QuestionRepository
 import za.co.dubedivine.networks.services.elastic.ElasticQuestionService
 import java.util.ArrayList
-import java.util.concurrent.ThreadPoolExecutor
 
 @RestController
 @RequestMapping("questions")
@@ -18,7 +16,7 @@ class AnswersController(//operations that can be done on a Answers
         private val questionRepository: QuestionRepository,
         private val taskExecutor: ThreadPoolTaskExecutor,
         private val elasticQuestionService: ElasticQuestionService
-        ) {
+) {
 
     @PutMapping("/{q_id}/answer") // questions/1/answer
     fun addAnswer(@PathVariable("q_id") questionId: String, @RequestBody answer: Answer): ResponseEntity<StatusResponseEntity> {   // could also take in the the whole question
@@ -26,7 +24,7 @@ class AnswersController(//operations that can be done on a Answers
         val statusResponseEntity: StatusResponseEntity
         return if (question == null) {
             statusResponseEntity = StatusResponseEntity(false, "the question you are trying to update does not exist")
-            ResponseEntity(statusResponseEntity, HttpStatus.BAD_REQUEST)
+            ResponseEntity(statusResponseEntity, HttpStatus.BAD_REQUEST) //return this
         } else {
             // todo: can be done better dwag
             val answers: ArrayList<Answer> = if (question.answers != null) {
@@ -34,13 +32,10 @@ class AnswersController(//operations that can be done on a Answers
             } else {
                 ArrayList()
             }
-
-
-
             answers.add(answer)  // todo: not very efficient but will do for now
             question.answers = answers
 
-            //not saving the saved ques tion because what if mongo goes wrong we might have a
+            //not saving the saved question because what if mongo goes wrong we might have a
             // chance of catching that value on mongo!!!
             taskExecutor.execute({
                 elasticQuestionService.saveQuestionToElastic(question)

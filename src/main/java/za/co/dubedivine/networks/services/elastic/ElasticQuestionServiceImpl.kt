@@ -18,6 +18,7 @@ class ElasticQuestionServiceImpl(private val elasticQRepo: ElasticQRepo,
 
     override fun findByTag(tagName: String): List<ElasticQuestion> {
         return elasticQRepo.findByTagsName(tagName)
+
     }
 
     override fun search(q: String): List<ElasticQuestion> {

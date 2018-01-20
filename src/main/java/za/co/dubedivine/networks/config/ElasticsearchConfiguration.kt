@@ -3,7 +3,6 @@ package za.co.dubedivine.networks.config
 
 import org.elasticsearch.client.Client
 import org.springframework.context.annotation.Configuration
-import org.springframework.context.annotation.PropertySource
 import org.springframework.data.elasticsearch.repository.config.EnableElasticsearchRepositories
 import java.net.InetAddress
 import org.springframework.data.elasticsearch.core.ElasticsearchTemplate
@@ -11,12 +10,8 @@ import org.springframework.data.elasticsearch.core.ElasticsearchOperations
 import org.elasticsearch.common.transport.InetSocketTransportAddress
 import org.elasticsearch.client.transport.TransportClient
 import org.elasticsearch.common.settings.Settings
-import org.elasticsearch.common.settings.Settings.settingsBuilder
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Bean
-import za.co.dubedivine.networks.model.elastic.ElasticQuestion
-import javax.annotation.PreDestroy
 
 
 @Configuration
@@ -26,20 +21,20 @@ class ElasticsearchConfiguration {
 //    @Autowired private lateinit var operations: ElasticsearchOperations
 
     @Value("\${elasticsearch.host}")
-    private val EsHost: String? = null
+    private val esHost: String? = null
 
     @Value("\${elasticsearch.port}")
-    private val EsPort: Int = 0
+    private val esPort: Int = 0
 
     @Value("\${elasticsearch.clustername}")
-    private val EsClusterName: String? = null
+    private val esClusterName: String? = null
 
     @Bean
     @Throws(Exception::class)
     fun client(): Client {
 
         val esSettings = Settings.settingsBuilder()
-                .put("cluster.name", EsClusterName)
+                .put("cluster.name", esClusterName)
                 .build()
 
         //https://www.elastic.co/guide/en/elasticsearch/guide/current/_transport_client_versus_node_client.html
@@ -47,10 +42,9 @@ class ElasticsearchConfiguration {
                 .settings(esSettings)
                 .build()
                 .addTransportAddress(
-                        InetSocketTransportAddress(InetAddress.getByName(EsHost), EsPort))
+                        InetSocketTransportAddress(
+                                InetAddress.getByName(esHost), esPort))
     }
-
-
 
     @Bean
     @Throws(Exception::class)

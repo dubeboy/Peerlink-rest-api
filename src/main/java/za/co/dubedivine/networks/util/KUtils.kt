@@ -1,7 +1,5 @@
 package za.co.dubedivine.networks.util
 
-import com.sun.org.apache.xpath.internal.operations.Bool
-import com.sun.xml.internal.fastinfoset.util.StringArray
 import org.springframework.context.annotation.AnnotationConfigApplicationContext
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
@@ -10,7 +8,6 @@ import za.co.dubedivine.networks.config.AppConfig
 import za.co.dubedivine.networks.model.Tag
 import za.co.dubedivine.networks.model.elastic.ElasticTag
 import za.co.dubedivine.networks.model.responseEntity.StatusResponseEntity
-import java.util.concurrent.ThreadPoolExecutor
 import java.util.regex.Pattern
 
 object KUtils {
@@ -55,6 +52,15 @@ object KUtils {
 
     fun getPattern(): Pattern = Pattern.compile(KUtils.REGEX)
 
+
+    // I think I was drunk here
+    // well its just a lambda function,
+    /**
+    * @param savedTag  [Tag] to be saved
+     *
+     * saves a normal [Tag] to elastic search
+     *
+    * */
     val instantiateElasticTag: (savedTag: Tag) -> ElasticTag = {
         val elasticTag = ElasticTag(it.name)
         elasticTag.questions = it.questions
