@@ -63,11 +63,12 @@ class DBHelper(private val questionRepository: QuestionRepository,
         }
 
         println("deleting all the available content in the elastic database")
-//            elasticQuestionService.deleteAll()
-//        elasticSearchOperations.refresh(ElasticQuestion::class.java)
+            elasticQuestionService.deleteAll()
+        elasticSearchOperations.refresh(ElasticQuestion::class.java)
         savedQuestions.forEach {
             val el = ElasticQuestion(it.title, it.body, it.votes, it.tags, it.type)
             el.answers = it.answers
+            el.comments = it.comments
             el.id = it.id
             elasticQuestionService.save(el)
         }

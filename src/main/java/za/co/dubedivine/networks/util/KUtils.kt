@@ -25,8 +25,8 @@ object KUtils {
         }
     }
 
-    fun respond(status: Boolean,  msg: String) : ResponseEntity<StatusResponseEntity> {
-       return ResponseEntity(StatusResponseEntity(status, msg),
+    fun <T> respond(status: Boolean,  msg: String, obj: T) : ResponseEntity<StatusResponseEntity<T>> {
+       return ResponseEntity(StatusResponseEntity(status, msg, obj),
                if(status) HttpStatus.CREATED else  HttpStatus.BAD_REQUEST)
     }
 

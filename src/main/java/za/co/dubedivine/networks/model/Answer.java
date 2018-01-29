@@ -2,8 +2,10 @@ package za.co.dubedivine.networks.model;
 
 import org.springframework.data.mongodb.core.mapping.Document;
 
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.UUID;
 
 /**
  * Created by divine on 2017/08/13.
@@ -14,9 +16,9 @@ public class Answer {
     private long votes;
     private boolean isChoosen;
     private Date createAt = new Date();
-    private List<Comment> comments;
+    private ArrayList<Comment> comments;
     private Media video;
-    private long id = System.currentTimeMillis();
+    private String id = UUID.randomUUID().toString();
 
     public Answer() {
     }
@@ -27,7 +29,7 @@ public class Answer {
         this.isChoosen = isChoosen;
     }
 
-    public Answer(String body, long votes, boolean isChosen, List<Comment> comments, Media video) {
+    public Answer(String body, long votes, boolean isChosen, ArrayList<Comment> comments, Media video) {
         this.body = body;
         this.votes = votes;
         this.isChoosen = isChosen;
@@ -51,7 +53,7 @@ public class Answer {
         return createAt;
     }
 
-    public List<Comment> getComments() {
+    public ArrayList<Comment> getComments() {
         return comments;
     }
 
@@ -59,7 +61,12 @@ public class Answer {
         return video;
     }
 
-    public long getId() {
+    public String getId() {
         return id;
     }
+
+    // @Override
+    // public String toString() {
+
+    // }
 }

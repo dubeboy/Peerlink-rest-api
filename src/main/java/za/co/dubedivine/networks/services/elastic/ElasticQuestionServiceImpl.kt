@@ -1,6 +1,6 @@
 package za.co.dubedivine.networks.services.elastic
 
-import org.elasticsearch.index.query.FuzzyQueryBuilder
+import org.elasticsearch.common.unit.Fuzziness
 import org.elasticsearch.index.query.QueryBuilders
 import org.springframework.data.elasticsearch.core.ElasticsearchTemplate
 import org.springframework.data.elasticsearch.core.query.NativeSearchQueryBuilder
@@ -29,12 +29,13 @@ class ElasticQuestionServiceImpl(private val elasticQRepo: ElasticQRepo,
                                 .queryStringQuery(q)
                                 .lenient(true)
                                 .field("title")
-                                .field("body"))
-                .should(QueryBuilders.queryStringQuery("*$q*")
-                        .lenient(true)
-                        .field("name")
-                        .field("body")
-                )
+                                .field("body")
+                                .fuzziness(Fuzziness.AUTO))
+//                .should(QueryBuilders.queryStringQuery("*$q*")
+//                        .lenient(true)
+//                        .field("name")
+//                        .field("body")
+//                )
         val build = NativeSearchQueryBuilder().withQuery(queryBuilder).build()
         return elasticsearchTemplate.queryForList(build, ElasticQuestion::class.java)
     }
@@ -90,7 +91,8 @@ class ElasticQuestionServiceImpl(private val elasticQRepo: ElasticQRepo,
         val eQ = ElasticQuestion(question.title,
                 question.body, question.votes, question.tags, question.type)
         eQ.answers = question.answers
-        elasticQRepo.save(eQ)
-        return elasticQRepo.save(eQ)
+        eQ.id = question.id
+        val saved =  elasticQRepo.save(eQ)
+        return saved
     }
 }

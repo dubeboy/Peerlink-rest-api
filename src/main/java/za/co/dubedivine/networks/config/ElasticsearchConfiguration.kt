@@ -51,6 +51,4 @@ class ElasticsearchConfiguration {
     fun elasticsearchTemplate(): ElasticsearchOperations {
         return ElasticsearchTemplate(client())
     }
-
-
 }

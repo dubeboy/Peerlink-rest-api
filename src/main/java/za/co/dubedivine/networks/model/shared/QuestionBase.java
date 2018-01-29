@@ -7,18 +7,24 @@ import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.index.TextIndexed;
 import za.co.dubedivine.networks.model.*;
 
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
+
+//this should hae probably been an interface
 public abstract class QuestionBase {
 
     protected @Id String id;  // protected because it has a setter in the Elastic question child class
     private @Indexed  String title;
     private String body;
     private long votes;
-    private @Field(type = FieldType.Nested) List<Comment> comments;
-    private List<Answer> answers;
-    private @Indexed @Field(type = FieldType.Nested) List<Tag> tags;  //todo: bad it should be mapping!!
+    @Field(type = FieldType.Nested)
+    private ArrayList<Comment> comments;
+    private ArrayList<Answer> answers;
+    @Indexed
+    @Field(type = FieldType.Nested)
+    private List<Tag> tags;  //todo: bad it should be mapping!!
     private User user; // the user the
     private String type;
     private @Field(type = FieldType.Nested) Media video;
@@ -60,11 +66,11 @@ public abstract class QuestionBase {
         return votes;
     }
 
-    public List<Comment> getComments() {
+    public ArrayList<Comment> getComments() {
         return comments;
     }
 
-    public List<Answer> getAnswers() {
+    public ArrayList<Answer> getAnswers() {
         return answers;
     }
 
@@ -88,11 +94,11 @@ public abstract class QuestionBase {
         this.createdAt = createdAt;
     }
 
-    public void setComments(List<Comment> comments) {
+    public void setComments(ArrayList<Comment> comments) {
         this.comments = comments;
     }
 
-    public void setAnswers(List<Answer> answers) {
+    public void setAnswers(ArrayList<Answer> answers) {
         this.answers = answers;
     }
 

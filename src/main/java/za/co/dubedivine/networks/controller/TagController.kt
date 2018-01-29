@@ -27,7 +27,7 @@ class TagController(private val tagRepository: TagRepository,
 
     @PostMapping("/{t_id}/subscribe/{u_id}")
     fun subscribeToTag(@PathVariable("t_id") tagId: String,
-                       @PathVariable("u_id") userId: String): ResponseEntity<StatusResponseEntity> {
+                       @PathVariable("u_id") userId: String): ResponseEntity<StatusResponseEntity<Tag>> {
 
         //function for a user  to listen to a particular TAG
         val tag = tagRepository.findOne(tagId)

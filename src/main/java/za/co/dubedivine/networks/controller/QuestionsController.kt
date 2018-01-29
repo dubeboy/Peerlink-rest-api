@@ -17,9 +17,7 @@ import org.springframework.web.bind.annotation.*
 import org.springframework.web.multipart.MultipartFile
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder
 import za.co.dubedivine.networks.config.AppConfig
-import za.co.dubedivine.networks.model.Media
-import za.co.dubedivine.networks.model.Question
-import za.co.dubedivine.networks.model.Tag
+import za.co.dubedivine.networks.model.*
 import za.co.dubedivine.networks.model.elastic.ElasticQuestion
 import za.co.dubedivine.networks.model.elastic.ElasticTag
 import za.co.dubedivine.networks.model.responseEntity.StatusResponseEntity
@@ -102,7 +100,7 @@ class QuestionsController(private val repository: QuestionRepository,
      * */
     @PostMapping("/{q_id}/files")
     fun addFiles(@PathVariable("q_id") questionId: String,
-                 @RequestParam("file") files: List<MultipartFile>): ResponseEntity<StatusResponseEntity> {
+                 @RequestParam("file") files: List<MultipartFile>): ResponseEntity<StatusResponseEntity<Question>> {
         val question = repository.findOne(questionId)
         if ((question) != null) {
             val fs = getGridFSInstance()
@@ -122,7 +120,7 @@ class QuestionsController(private val repository: QuestionRepository,
                         createFile.contentType,
                         createFile.id.toString())
                 repository.save(question)
-                return ResponseEntity(StatusResponseEntity(
+                return ResponseEntity(StatusResponseEntity<Question>(
                         true,
                         "file created"),
                         HttpStatus.CREATED)
@@ -140,11 +138,11 @@ class QuestionsController(private val repository: QuestionRepository,
                 }
                 question.files = docs
                 repository.save(question)
-                return ResponseEntity(StatusResponseEntity(true,
-                        "files created"), HttpStatus.CREATED)
+                return ResponseEntity(StatusResponseEntity<Question>(true,
+                        "files created", question), HttpStatus.CREATED)
             }
         } else {
-            return ResponseEntity(StatusResponseEntity(true,
+            return ResponseEntity(StatusResponseEntity<Question>(true,
                     "sorry could not add files"), HttpStatus.CREATED)
         }
 
@@ -208,5 +206,19 @@ class QuestionsController(private val repository: QuestionRepository,
         //todo: should actually have another collection called deleted stuff where we move this stuff to
         repository.delete(questionId)
 
+    }
+
+     @PostMapping("/{q_id}/comment")
+    fun commentOnQuestion(@PathVariable("q_id") questionId: String,
+                             @RequestBody comment: Comment): ResponseEntity<StatusResponseEntity<Answer>> {
+        val question = repository.findOne(questionId)
+        // Criteria criteria = Criteria.where("mappings.provider.name").is(provider.getName());
+        //TODO: Bad code
+        val comments = question.comments
+        comments.add(comment)
+        return ResponseEntity(StatusResponseEntity<Answer>(true,
+                        "Comment added on question", null),
+                        HttpStatus.OK)
+    
     }
 }
