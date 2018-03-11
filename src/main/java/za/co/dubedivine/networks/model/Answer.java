@@ -16,7 +16,7 @@ public class Answer {
     private long votes;
     private boolean isChoosen;
     private Date createAt = new Date();
-    private ArrayList<Comment> comments;
+    private ArrayList<Comment> comments = new ArrayList<>();
     private Media video;
     private String id = UUID.randomUUID().toString();
 
@@ -44,6 +44,9 @@ public class Answer {
     public long getVotes() {
         return votes;
     }
+    public void setVotes(long votes) {
+        this.votes = votes;
+    }
 
     public boolean isChoosen() {
         return isChoosen;
@@ -55,6 +58,10 @@ public class Answer {
 
     public ArrayList<Comment> getComments() {
         return comments;
+    }
+
+    public void setComments(ArrayList<Comment> comments) {
+        this.comments = comments;
     }
 
     public Media getVideo() {

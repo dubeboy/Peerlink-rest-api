@@ -20,10 +20,10 @@ class AnswersController(//operations that can be done on a Answers
         private val mongoTemplate: MongoTemplate,
         private val elasticQuestionService: ElasticQuestionService) {
 
-   //todo: duplicates every time I save
+    //todo: duplicates every time I save
     @PutMapping("/{q_id}/answer") // questions/1/answer
-    fun addAnswer(@PathVariable("q_id") questionId: String, @RequestBody answer: Answer): 
-                                                     ResponseEntity<StatusResponseEntity<Answer>> {   // could also take in the the whole question
+    fun addAnswer(@PathVariable("q_id") questionId: String, @RequestBody answer: Answer):
+            ResponseEntity<StatusResponseEntity<Answer>> {   // could also take in the the whole question
         val question = questionRepository.findOne(questionId)
         println("the question $question and the id is ${question.id}")
         val statusResponseEntity: StatusResponseEntity<Answer>
@@ -38,58 +38,53 @@ class AnswersController(//operations that can be done on a Answers
             val savedOne = questionRepository.save(question)
             println("after: the question $savedOne and the id is ${savedOne.id}")
             statusResponseEntity = StatusResponseEntity(true,
-                "Successfully added a new answer to this question", 
-                answer)
+                    "Successfully added a new answer to this question",
+                    answer)
             ResponseEntity(statusResponseEntity, HttpStatus.CREATED)
 
         }
     }
 
-    //vote on a question please
-    //flawed pass just add or minus
-    @PostMapping("/{q_id}/answer") //updating
+    @PostMapping("/{q_id}/answer/{a_id}/vote") //updating
     fun voteAnswer(@PathVariable("q_id") questionId: String,
-                   @RequestBody ans: Answer): ResponseEntity<StatusResponseEntity<Answer>> {
+                   @PathVariable("a_id") ans: String,
+                   @RequestParam("vote") vote: Boolean): ResponseEntity<StatusResponseEntity<Answer>> {
         val answers: MutableList<Answer>
         val question = questionRepository.findOne(questionId)
         answers = question.answers
         for (answer in answers) {
-            if (answer.id == ans.id) {
-                answers.remove(answer)
-                answers.add(ans)
-                question.answers = answers
+            if (answer.id == ans) {
+                if (vote) answer.votes = answer.votes + 1 else answer.votes = answer.votes - 1
+                questionRepository.save(question)
                 return ResponseEntity(StatusResponseEntity<Answer>(true,
-                        "Votes added " + answer.votes + 1, null),
+                        "Vote ${if (vote) "added" else "removed"} ", null),
                         HttpStatus.OK)
             }
         }
         return ResponseEntity(StatusResponseEntity<Answer>(false,
-                "no such question can be found", null), HttpStatus.BAD_REQUEST)
+                "sorry we cannot find this answer that you want to vote on", null), HttpStatus.BAD_REQUEST)
     }
 
     @PostMapping("/{q_id}/answer/{a_id}/comment")
-    fun commentOnAnswer(@PathVariable("q_id") questionId: String, 
-                            @PathVariable("a_id") answerId: String,
-                             @RequestBody comment: Comment): ResponseEntity<StatusResponseEntity<Answer>> {
-        val answers: MutableList<Answer>
+    fun commentOnAnswer(@PathVariable("q_id") questionId: String,
+                        @PathVariable("a_id") answerId: String,
+                        @RequestBody comment: Comment): ResponseEntity<StatusResponseEntity<Answer>> {
         val question = questionRepository.findOne(questionId)
-        answers = question.answers
-        // Criteria criteria = Criteria.where("mappings.provider.name").is(provider.getName());
-        //TODO: Bad code
-
-        for (answer in answers) {
-            if (answer.id == answerId) {
-//                answers.remove(answer)
-                answer.comments.add(comment)
-//                answers.add(answer)
-//                question.answers = answers
-                questionRepository.save(question)
-                return ResponseEntity(StatusResponseEntity(true,
-                        "Votes added " + answer.votes + 1, answer ),
-                        HttpStatus.OK)
-            }
-        }
-        return ResponseEntity(StatusResponseEntity<Answer>(false,
+        //TODO: Bad code use Criteria criteria = Criteria.where("mappings.provider.name").is(provider.getName());
+        val answers = question.answers
+        if (question == null) return ResponseEntity(StatusResponseEntity<Answer>(false,
                 "no such question can be found", null), HttpStatus.BAD_REQUEST)
+        else
+            for (answer in answers) {
+                if (answer.id == answerId) {
+                    answer.comments.add(comment)
+                    questionRepository.save(question)
+                    return ResponseEntity(StatusResponseEntity(true,
+                            "Comment added ", answer),
+                            HttpStatus.OK)
+                }
+            }
+        return ResponseEntity(StatusResponseEntity<Answer>(false,
+                "no such answer found can be found", null), HttpStatus.BAD_REQUEST)
     }
 }

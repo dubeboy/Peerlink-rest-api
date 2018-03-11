@@ -65,6 +65,9 @@ public abstract class QuestionBase {
     public long getVotes() {
         return votes;
     }
+    public void setVotes(long votes) {
+        this.votes = votes;
+    }
 
     public ArrayList<Comment> getComments() {
         return comments;

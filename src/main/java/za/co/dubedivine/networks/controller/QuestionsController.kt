@@ -40,6 +40,7 @@ class QuestionsController(private val repository: QuestionRepository,
                           private val mongoTemplate: MongoTemplate) {
 
     private final val context = AnnotationConfigApplicationContext(AppConfig::class.java)
+    // could just inject this
     private final val taskExecutor = context.getBean("taskExecutor") as ThreadPoolTaskExecutor
     //TODO: Google post vs put
     val allQuestions: List<Question>
@@ -94,10 +95,11 @@ class QuestionsController(private val repository: QuestionRepository,
 
 
     //todo: add some point we need to add the files to elastic + Tika so that we can search thru them
-    /**
+    /*
      * so this function should actually handle both uploading of images and videos
      * and also uploading of many documents
-     * */
+     *
+     */
     @PostMapping("/{q_id}/files")
     fun addFiles(@PathVariable("q_id") questionId: String,
                  @RequestParam("file") files: List<MultipartFile>): ResponseEntity<StatusResponseEntity<Question>> {
@@ -208,17 +210,27 @@ class QuestionsController(private val repository: QuestionRepository,
 
     }
 
-     @PostMapping("/{q_id}/comment")
+    @PostMapping("/{q_id}/comment")
     fun commentOnQuestion(@PathVariable("q_id") questionId: String,
-                             @RequestBody comment: Comment): ResponseEntity<StatusResponseEntity<Answer>> {
+                          @RequestBody comment: Comment): ResponseEntity<StatusResponseEntity<Answer>> {
         val question = repository.findOne(questionId)
-        // Criteria criteria = Criteria.where("mappings.provider.name").is(provider.getName());
-        //TODO: Bad code
+        // todo: what happens if we cannot find the question!!!
         val comments = question.comments
         comments.add(comment)
+        repository.save(question)
         return ResponseEntity(StatusResponseEntity<Answer>(true,
-                        "Comment added on question", null),
-                        HttpStatus.OK)
-    
+                "Comment added on question", null),
+                HttpStatus.OK)
+    }
+
+    @PostMapping("/{q_id}/vote") //updating
+    fun voteAnswer(@PathVariable("q_id") questionId: String,
+                   @RequestParam("vote") vote: Boolean): ResponseEntity<StatusResponseEntity<Answer>> {
+        val question = repository.findOne(questionId)
+        if (vote) question.votes = question.votes + 1 else question.votes = question.votes - 1
+        repository.save(question)
+        return ResponseEntity(StatusResponseEntity<Answer>(true,
+                "Vote ${if (vote) "added" else "removed"} ", null),
+                HttpStatus.OK)
     }
 }

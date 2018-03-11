@@ -43,8 +43,8 @@ class ElasticQuestionServiceImpl(private val elasticQRepo: ElasticQRepo,
     override fun searchWithQuestionTag(title: String, tagName: String): List<ElasticQuestion> {
 
         println("starting with ###################")
-        println("the tags is: " + tagName)
-        println("the title: " + title)
+        println("the tags is: $tagName")
+        println("the title: $title")
         println("starting with ###################")
         //todo: need to find way to query based on child element
         val queryBuilder = QueryBuilders

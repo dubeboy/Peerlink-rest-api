@@ -13,7 +13,6 @@ import za.co.dubedivine.networks.repository.QuestionRepository
 import za.co.dubedivine.networks.repository.elastic.ElasticTagRepo
 import za.co.dubedivine.networks.services.elastic.ElasticQuestionService
 import javax.annotation.PreDestroy
-
 /**
  * Created by divine on 2017/08/11.
  */
@@ -37,9 +36,11 @@ class DBHelper(private val questionRepository: QuestionRepository,
                 "people are telling me different things about an atom bro please help me!",
                 10, arrayListOf(Tag("phy1a")),
                 "QUESTION")
+        val qA = Answer("an atom is the smallest matter that the make up every known object", 50, false)
+        qA.comments = arrayListOf(Comment("good comment", 0), Comment("bad comment", 0))
         questionA.answers =
                 arrayListOf(Answer("an atom is the the basic building block of matter", 100, true),
-                Answer("an atom is the smallest matter that the make up every known object", 50, false))
+                        qA)
         questionA.comments =
                 arrayListOf(Comment("did u try googling this?", 0),
                 Comment("we would expect you to know this bro!", 2))
@@ -48,8 +49,10 @@ class DBHelper(private val questionRepository: QuestionRepository,
                 "We doing magnets and electricity and i really dont get the gist of magnetic flux",
                 10, arrayListOf(Tag("phy1a"), Tag("etn1b")),
                 "QUESTION")
+        val answer = Answer("the magnetic flux is the force field around a magnet", 300, true)
+        answer.comments = arrayListOf(Comment("Hello", 0), Comment("Sup", 100))
         questionB.answers =
-                arrayListOf(Answer("the magnetic flux is the force field around a magnet", 300, true),
+                arrayListOf(answer,
                 Answer("the magnetic flux is the name of invisible force that the magnet has on objects",
                         60,
                         false))
