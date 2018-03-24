@@ -28,7 +28,7 @@ import za.co.dubedivine.networks.services.elastic.ElasticQuestionService
 import za.co.dubedivine.networks.util.KUtils
 import java.util.*
 
-//todo: handling invalid data an dublicate data
+//todo: handling invalid data an duplicate data
 //todo: split tags and questions
 // todo: make pageable offset etc
 @RestController
