@@ -20,14 +20,17 @@ class UsersKontroller(private val userRepository: UserRepository,
             return ResponseEntity(StatusResponseEntity(true,
                     "User Exits", userRepository.findByEmail(user.email)),
                     HttpStatus.OK)
-        } else if (!userRepository.existsByEmail(user.email) && user.degree != null ) {
+        } else if (!userRepository.existsByEmail(user.email) &&  //todo these are bad should be oved to their own functions
+                user.degree != null &&
+                user.degree.isNotBlank()) {
+
             tagRepository.save(Tag(user.degree))
             user.tags.add(Tag(changeDegree(user.degree)))
-            return ResponseEntity(StatusResponseEntity(false,
+            return ResponseEntity(StatusResponseEntity(true,
                     "Created a new account", userRepository.save(user)),
                     HttpStatus.OK)
         }
-        return ResponseEntity(StatusResponseEntity(true,
+        return ResponseEntity(StatusResponseEntity(false,
                 "Please create a new user", userRepository.findByEmail(user.email)),
                 HttpStatus.OK)
     }

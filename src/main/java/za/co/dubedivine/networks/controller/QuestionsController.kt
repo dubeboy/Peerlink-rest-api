@@ -50,9 +50,16 @@ class QuestionsController(private val repository: QuestionRepository,
             return repository.findAll(sort)
         }
 
+
+    @GetMapping("/{q_id}")
+    fun getQuestion(@PathVariable("q_id") questionId: String): ResponseEntity<StatusResponseEntity<Question>> {
+        val q = repository.findOne(questionId)
+        return ResponseEntity(StatusResponseEntity(q != null,
+                if(q == null ) "could not find question" else "", q), HttpStatus.CREATED)
+    }
     //needs a major refactoring
     @PutMapping //adding anew entity
-    fun addQuestion(@RequestBody question: Question): ResponseEntity<Any> {
+    fun addQuestion(@RequestBody question: Question): ResponseEntity<StatusResponseEntity<Question>> {
         var elasticTagToSave: ElasticTag? = null
         question.tags.forEach {
             val tag = tagRepository.findFirstByName(it.name)
@@ -70,13 +77,13 @@ class QuestionsController(private val repository: QuestionRepository,
             }
         }
         val q = repository.insert(question)
-        taskExecutor.execute({
+        taskExecutor.execute {
             //should stop auto enable mongo and then i can create a mongo template
             val elasticQuestion = ElasticQuestion(q.title, q.body, q.votes, q.tags, q.type)
             elasticQuestion.id = q.id
             elasticQuestionService.save(elasticQuestion)
             elasticTagRepo.save(elasticTagToSave)
-        })
+        }
         val uri = ServletUriComponentsBuilder
                 .fromCurrentRequest()
                 .path("/{id}")
@@ -84,7 +91,8 @@ class QuestionsController(private val repository: QuestionRepository,
         val httpHeaders = HttpHeaders()
         httpHeaders.location = uri
 
-        return ResponseEntity<Any>(null, httpHeaders, HttpStatus.CREATED)
+        return ResponseEntity(StatusResponseEntity(true,
+                "saved question", q), httpHeaders, HttpStatus.CREATED)
     }
 
     @PostMapping //for editing
@@ -102,7 +110,8 @@ class QuestionsController(private val repository: QuestionRepository,
      */
     @PostMapping("/{q_id}/files")
     fun addFiles(@PathVariable("q_id") questionId: String,
-                 @RequestParam("file") files: List<MultipartFile>): ResponseEntity<StatusResponseEntity<Question>> {
+                 @RequestParam("file") files: List<MultipartFile>):
+            ResponseEntity<StatusResponseEntity<Question>> {
         val question = repository.findOne(questionId)
         if ((question) != null) {
             val fs = getGridFSInstance()
@@ -122,7 +131,7 @@ class QuestionsController(private val repository: QuestionRepository,
                         createFile.contentType,
                         createFile.id.toString())
                 repository.save(question)
-                return ResponseEntity(StatusResponseEntity<Question>(
+                return ResponseEntity(StatusResponseEntity(
                         true,
                         "file created"),
                         HttpStatus.CREATED)

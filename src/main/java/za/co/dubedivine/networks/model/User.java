@@ -7,6 +7,7 @@ import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 @Document
 public class User {
@@ -20,6 +21,7 @@ public class User {
     @JsonProperty("photo_url")
     private String photoUrl;
     private String degree;
+    private Set<String> modules;
     @Indexed
     private List<Tag> tags = new ArrayList<>();
 
@@ -27,6 +29,7 @@ public class User {
         this.tags = tags;
     }
 
+    //required for the jackson!!
     public User() {
 
     }
@@ -79,5 +82,13 @@ public class User {
 
     public void setDegree(String degree) {
         this.degree = degree;
+    }
+
+    public Set<String> getModules() {
+        return modules;
+    }
+
+    public void setModules(Set<String> modules) {
+        this.modules = modules;
     }
 }
