@@ -110,14 +110,14 @@ class QuestionsController(private val repository: QuestionRepository,
      */
     @PostMapping("/{q_id}/files")
     fun addFiles(@PathVariable("q_id") questionId: String,
-                 @RequestParam("file") files: List<MultipartFile>):
+                 @RequestPart files: List<MultipartFile>):
             ResponseEntity<StatusResponseEntity<Question>> {
         val question = repository.findOne(questionId)
         if ((question) != null) {
             val fs = getGridFSInstance()
 
             println("the bucket name is:  ${fs.bucketName} and the db:  ${fs.db}")
-            if (files.size == 1) {  //not the best way of checking, but i know the client will restrict this
+            if (files.size == 1 && files[0].contentType.substringBefore("/") == "video") {  //not the best way of checking, but i know the client will restrict this
                 val createFile: GridFSInputFile = fs.createFile(
                         files[0].inputStream,
                         questionId, //sae it with the question ID
@@ -141,6 +141,7 @@ class QuestionsController(private val repository: QuestionRepository,
                     val createFile: GridFSInputFile = fs.createFile(
                             it.inputStream,
                             questionId, true)
+                    createFile.contentType = it.contentType
                     createFile.save()
                     docs.add(Media(it.originalFilename,
                             createFile.length,
@@ -154,7 +155,7 @@ class QuestionsController(private val repository: QuestionRepository,
             }
         } else {
             return ResponseEntity(StatusResponseEntity<Question>(true,
-                    "sorry could not add files"), HttpStatus.CREATED)
+                    "sorry could not add files because we could not find that question"), HttpStatus.CREATED)
         }
 
     }
@@ -191,7 +192,7 @@ class QuestionsController(private val repository: QuestionRepository,
 //todo: http://ufasoli.blogspot.co.za/2013/08/mongodb-spring-data-elemmatch-in-field.html
     @GetMapping("/search") // elastic search
     fun search(@RequestParam("text") searchText: String): Set<ElasticQuestion> {
-        println("the search term is " + searchText)
+        println("the search term is $searchText")
         if (!KUtils.hasTags(searchText)) {
             println("in 1st phase bro")
             return elasticQuestionService.search(searchText).toSet()
