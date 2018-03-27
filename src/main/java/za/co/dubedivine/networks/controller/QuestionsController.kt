@@ -117,7 +117,7 @@ class QuestionsController(private val repository: QuestionRepository,
             val fs = getGridFSInstance()
 
             println("the bucket name is:  ${fs.bucketName} and the db:  ${fs.db}")
-            if (files.size == 1 && files[0].contentType.substringBefore("/") == "video") {  //not the best way of checking, but i know the client will restrict this
+            if (files.size == 1 && KUtils.isFileAVideo(files[0].contentType)) {  //not the best way of checking, but i know the client will restrict this
                 val createFile: GridFSInputFile = fs.createFile(
                         files[0].inputStream,
                         questionId, //sae it with the question ID
@@ -130,10 +130,11 @@ class QuestionsController(private val repository: QuestionRepository,
                         createFile.length,
                         createFile.contentType,
                         createFile.id.toString())
-                repository.save(question)
+
                 return ResponseEntity(StatusResponseEntity(
                         true,
-                        "file created"),
+                        "file created",
+                        repository.save(question)),
                         HttpStatus.CREATED)
             } else { // this application type is
                 val docs: ArrayList<Media> = arrayListOf()

@@ -25,6 +25,19 @@ object KUtils {
         }
     }
 
+    fun isFileAVideo(mime: String): Boolean {
+        return when (mime.substringAfter("/")) {
+            "mp4", "3gp" ->
+                true
+            else ->
+                false
+        }
+    }
+
+    fun genDownloadUrlForFile(filename: String) {
+
+    }
+
     fun <T> respond(status: Boolean,  msg: String, obj: T) : ResponseEntity<StatusResponseEntity<T>> {
        return ResponseEntity(StatusResponseEntity(status, msg, obj),
                if(status) HttpStatus.CREATED else  HttpStatus.BAD_REQUEST)
@@ -79,5 +92,6 @@ object KUtils {
     fun cleanTag(tag: String): String {
         return tag.substringAfter('#')
     }
+
 
 }
