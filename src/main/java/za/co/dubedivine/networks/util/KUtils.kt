@@ -1,6 +1,8 @@
 package za.co.dubedivine.networks.util
 
+import com.mongodb.gridfs.GridFS
 import org.springframework.context.annotation.AnnotationConfigApplicationContext
+import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor
@@ -91,6 +93,10 @@ object KUtils {
 
     fun cleanTag(tag: String): String {
         return tag.substringAfter('#')
+    }
+
+    fun getGridFs(mongoTemplate: MongoTemplate): GridFS {
+        return GridFS(mongoTemplate.db)
     }
 
 

@@ -3,6 +3,7 @@ package za.co.dubedivine.networks.controller
 import com.mongodb.gridfs.GridFS
 import com.mongodb.gridfs.GridFSDBFile
 import com.mongodb.gridfs.GridFSInputFile
+import org.bson.types.ObjectId
 import org.springframework.context.annotation.AnnotationConfigApplicationContext
 import org.springframework.core.io.InputStreamResource
 import org.springframework.core.io.Resource
@@ -161,7 +162,8 @@ class QuestionsController(private val repository: QuestionRepository,
 
     }
 
-    private fun getGridFSInstance() = GridFS(mongoTemplate.db)
+    // could make this a property
+    private fun getGridFSInstance() = KUtils.getGridFs(mongoTemplate)
 
     //todo: should append type of file here as well
     //function to get the files for a specific question
