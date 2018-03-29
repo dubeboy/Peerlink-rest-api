@@ -119,41 +119,25 @@ class QuestionsController(private val repository: QuestionRepository,
 
             println("the bucket name is:  ${fs.bucketName} and the db:  ${fs.db}")
             if (files.size == 1 && KUtils.isFileAVideo(files[0].contentType)) {  //not the best way of checking, but i know the client will restrict this
-                val createFile: GridFSInputFile = fs.createFile(
-                        files[0].inputStream,
-                        questionId, //sae it with the question ID
-                        true)
+                val createFile = fs.createFile(files[0].inputStream, questionId, true)
+                createFile.contentType = files[0].contentType
                 createFile.save()
                 val id = createFile.id
                 println("the is of the file is: $id")
-                question.video = Media(
-                        files[0].originalFilename,
-                        createFile.length,
-                        createFile.contentType,
-                        createFile.id.toString())
-
+                question.video = Media(files[0].originalFilename, createFile.length, createFile.contentType, createFile.id.toString())
                 return ResponseEntity(StatusResponseEntity(
-                        true,
-                        "file created",
-                        repository.save(question)),
-                        HttpStatus.CREATED)
+                        true, "file created", repository.save(question)), HttpStatus.CREATED)
             } else { // this application type is
                 val docs: ArrayList<Media> = arrayListOf()
                 files.forEach {
-                    val createFile: GridFSInputFile = fs.createFile(
-                            it.inputStream,
-                            questionId, true)
+                    val createFile = fs.createFile(it.inputStream, questionId, true)
                     createFile.contentType = it.contentType
                     createFile.save()
-                    docs.add(Media(it.originalFilename,
-                            createFile.length,
-                            createFile.contentType,
-                            createFile.id.toString()))
+                    docs.add(Media(it.originalFilename, createFile.length, createFile.contentType, createFile.id.toString()))
                 }
                 question.files = docs
                 repository.save(question)
-                return ResponseEntity(StatusResponseEntity<Question>(true,
-                        "files created", question), HttpStatus.CREATED)
+                return ResponseEntity(StatusResponseEntity<Question>(true, "files created", question), HttpStatus.CREATED)
             }
         } else {
             return ResponseEntity(StatusResponseEntity<Question>(true,
