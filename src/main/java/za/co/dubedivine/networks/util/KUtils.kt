@@ -7,6 +7,7 @@ import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor
 import za.co.dubedivine.networks.config.AppConfig
+import za.co.dubedivine.networks.model.Media
 import za.co.dubedivine.networks.model.Tag
 import za.co.dubedivine.networks.model.elastic.ElasticTag
 import za.co.dubedivine.networks.model.responseEntity.StatusResponseEntity
@@ -15,12 +16,13 @@ import java.util.regex.Pattern
 object KUtils {
 
     private const val REGEX = "#(\\d*[A-Za-z_]+\\w*)\\b(?!;)"
+
     enum class CONTENT_TYPE {
         VID_IMG, DOC
     }
 
-    fun getFileType(mime: String) : CONTENT_TYPE {
-        return if(mime.startsWith("image") || mime.startsWith("video")) {
+    fun getFileType(mime: String): CONTENT_TYPE {
+        return if (mime.startsWith("image") || mime.startsWith("video")) {
             CONTENT_TYPE.VID_IMG
         } else {
             CONTENT_TYPE.DOC
@@ -40,9 +42,9 @@ object KUtils {
 
     }
 
-    fun <T> respond(status: Boolean,  msg: String, obj: T) : ResponseEntity<StatusResponseEntity<T>> {
-       return ResponseEntity(StatusResponseEntity(status, msg, obj),
-               if(status) HttpStatus.CREATED else  HttpStatus.BAD_REQUEST)
+    fun <T> respond(status: Boolean, msg: String, obj: T): ResponseEntity<StatusResponseEntity<T>> {
+        return ResponseEntity(StatusResponseEntity(status, msg, obj),
+                if (status) HttpStatus.CREATED else HttpStatus.BAD_REQUEST)
     }
 
     fun getCleanTextAndTags(text: String): Pair<String, Set<String>> {
@@ -55,7 +57,7 @@ object KUtils {
             println("yeye thete are tags $tag ")
             tags.add(tag)
         }
-        val  cleanSearchText =  p.matcher(text).replaceAll(" ")
+        val cleanSearchText = p.matcher(text).replaceAll(" ")
         println("these are the tags fam $tags")
         return Pair(cleanSearchText, tags)
     }
@@ -65,17 +67,17 @@ object KUtils {
         return p.toRegex().containsMatchIn(text)
     }
 
-    fun getPattern(): Pattern = Pattern.compile(KUtils.REGEX)
+    private fun getPattern(): Pattern = Pattern.compile(KUtils.REGEX)
 
 
     // I think I was drunk here
     // well its just a lambda function,
     /**
-    * @param savedTag  [Tag] to be saved
+     * @param savedTag  [Tag] to be saved
      *
      * saves a normal [Tag] to elastic search
      *
-    * */
+     * */
     val instantiateElasticTag: (savedTag: Tag) -> ElasticTag = {
         val elasticTag = ElasticTag(it.name)
         elasticTag.questions = it.questions
@@ -97,6 +99,19 @@ object KUtils {
 
     fun getGridFs(mongoTemplate: MongoTemplate): GridFS {
         return GridFS(mongoTemplate.db)
+    }
+
+    fun genMediaTypeFromContentType(contentType: String) : Char {
+        // so we know the video part we only have to check for the
+        // pdf and the pictures
+        return when (contentType.substringAfter(".")) {
+            "pdf", "docx", "ppt", "xls", "txt", "doc"  -> {
+                Media.DOCS_TYPE
+            }
+            else -> {
+                Media.PICTURE_TYPE
+            }
+        }
     }
 
 

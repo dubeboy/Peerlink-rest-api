@@ -121,19 +121,26 @@ class QuestionsController(private val repository: QuestionRepository,
                 createFile.save()
                 val id = createFile.id
                 println("the is of the file is: $id")
-                question.video = Media(files[0].originalFilename, createFile.length, createFile.contentType, id.toString())
+                question.video = Media(files[0].originalFilename, createFile.length, Media.VIDEO_TYPE, id.toString())
+                val savedQuestion = repository.save(question)
+                saveQuestionOnElasticOnANewThread(savedQuestion)
                 return ResponseEntity(StatusResponseEntity(
-                        true, "file created", repository.save(question)), HttpStatus.CREATED)
+                        true, "file created", savedQuestion), HttpStatus.CREATED)
             } else { // this application type is
                 val docs: ArrayList<Media> = arrayListOf()
                 files.forEach {
                     val createFile = fs.createFile(it.inputStream, questionId, true)
                     createFile.contentType = it.contentType
                     createFile.save()
-                    docs.add(Media(it.originalFilename, createFile.length, createFile.contentType, createFile.id.toString()))
+                    docs.add(Media(
+                            it.originalFilename,
+                            createFile.length,
+                            KUtils.genMediaTypeFromContentType(createFile.contentType),
+                            createFile.id.toString()))
                 }
                 question.files = docs
-                repository.save(question)
+                val savedQuestion = repository.save(question)
+                saveQuestionOnElasticOnANewThread(savedQuestion)
                 return ResponseEntity(StatusResponseEntity(true, "files created", question), HttpStatus.CREATED)
             }
         } else {
@@ -142,6 +149,16 @@ class QuestionsController(private val repository: QuestionRepository,
         }
     }
 
+    private fun updateElasticQuestion(question: Question) {
+        elasticQuestionService.saveQuestionToElastic(question)
+    }
+
+    // we do this so that we dont block anything
+    private fun saveQuestionOnElasticOnANewThread(question: Question) {
+        taskExecutor.execute({
+            updateElasticQuestion(question)
+        })
+    }
     // could make this a property
     private fun getGridFSInstance() = KUtils.getGridFs(mongoTemplate)
 

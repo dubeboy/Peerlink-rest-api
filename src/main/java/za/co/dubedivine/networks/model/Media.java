@@ -14,9 +14,13 @@ public class Media {
     @Id
     private String name;
     private long size;
-    private String type;
+    private char type;
     private String location;
     private Date createAt = new Date();
+
+    public static final char VIDEO_TYPE = 'V';
+    public static final char PICTURE_TYPE = 'P';
+    public static final char DOCS_TYPE = 'D';
 
     public String getName() {
         return name;
@@ -26,7 +30,7 @@ public class Media {
         return size;
     }
 
-    public String getType() {
+    public char getType() {
         return type;
     }
 
@@ -42,10 +46,13 @@ public class Media {
         return createAt;
     }
 
-    public Media(String name, long size, String type, String location) {
+    public Media(String name, long size, char type, String location) {
         this.name = name;
         this.size = size;
         this.type = type;
         this.location = location;
+    }
+
+    public Media() {
     }
 }

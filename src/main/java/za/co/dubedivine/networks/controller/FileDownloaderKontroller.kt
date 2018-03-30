@@ -9,7 +9,6 @@ import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
-import sun.misc.IOUtils
 import za.co.dubedivine.networks.util.KUtils
 import java.io.*
 import java.io.IOException
@@ -58,8 +57,6 @@ class FileDownloaderKontroller(mongoTemplate: MongoTemplate) {
             println("sorry could not find that file")
             return ResponseEntity(HttpStatus.NO_CONTENT)
         }
-
-
     }
 
     @Throws(IOException::class)

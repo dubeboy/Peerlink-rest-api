@@ -17,7 +17,7 @@ public class ElasticQuestion extends QuestionBase {
     @CompletionField //this requires the Non Null @Json Includes
     private Completion suggest; //todo: for suggestions
 
-    ElasticQuestion() { }
+    ElasticQuestion() { super(); }
 
     public void setId(String id) {
         super.id = id;

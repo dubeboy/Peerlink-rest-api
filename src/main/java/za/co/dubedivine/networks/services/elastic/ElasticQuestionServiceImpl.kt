@@ -88,11 +88,11 @@ class ElasticQuestionServiceImpl(private val elasticQRepo: ElasticQRepo,
     }
 
     override fun saveQuestionToElastic(question: Question): ElasticQuestion {
-        val eQ = ElasticQuestion(question.title,
-                question.body, question.votes, question.tags, question.type)
+        val eQ = ElasticQuestion(question.title, question.body, question.votes, question.tags, question.type)
         eQ.answers = question.answers
         eQ.id = question.id
-        val saved =  elasticQRepo.save(eQ)
-        return saved
+        eQ.files = question.files
+        eQ.video = question.video
+        return elasticQRepo.save(eQ)
     }
 }

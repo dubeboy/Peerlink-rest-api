@@ -28,7 +28,7 @@ public abstract class QuestionBase {
     private User user; // the user the
     private String type;
     private @Field(type = FieldType.Nested) Media video;
-    private List<Media> files; //this can be combined with video dwag
+    private @Field(type = FieldType.Nested) List<Media> files; //this can be combined with video dwag
     private @Field(type= FieldType.Date) Date createdAt = new Date();
 
     public QuestionBase() {
@@ -42,6 +42,24 @@ public abstract class QuestionBase {
         this.votes = votes;
         this.tags = tags;
         this.type = type;
+    }
+
+
+    public QuestionBase(String title, String body, long votes, List<Tag> tags, String type, Media video) {
+        this.title = title;
+        this.body = body;
+        this.votes = votes;
+        this.tags = tags;
+        this.type = type;
+        this.video = video;
+    }
+    public QuestionBase(String title, String body, long votes, List<Tag> tags, String type, List<Media> files) {
+        this.title = title;
+        this.body = body;
+        this.votes = votes;
+        this.tags = tags;
+        this.type = type;
+        this.files = files;
     }
 
     //for video we will add another constructor which has video here
