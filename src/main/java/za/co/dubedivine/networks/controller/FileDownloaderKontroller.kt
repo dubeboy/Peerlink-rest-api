@@ -20,13 +20,12 @@ import java.io.IOException
 class FileDownloaderKontroller(mongoTemplate: MongoTemplate) {
 
     private val fsInstance = KUtils.getGridFs(mongoTemplate)
-
     @GetMapping("/{id}")
     fun getFile(@PathVariable("id") id: String): ResponseEntity<ByteArrayResource> {
         try {
             println("the Id id $id")
-            val query = BasicDBObject();
-            query["filename"] = id
+            val query = BasicDBObject()
+            query["_id"] = ObjectId(id)
             val gridFSDBFile: GridFSDBFile? = fsInstance.findOne(query)
 
             if (gridFSDBFile != null && gridFSDBFile.length != 0L) {

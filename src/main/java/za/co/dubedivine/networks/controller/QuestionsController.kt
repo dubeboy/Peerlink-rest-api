@@ -1,9 +1,6 @@
 package za.co.dubedivine.networks.controller
 
-import com.mongodb.gridfs.GridFS
 import com.mongodb.gridfs.GridFSDBFile
-import com.mongodb.gridfs.GridFSInputFile
-import org.bson.types.ObjectId
 import org.springframework.context.annotation.AnnotationConfigApplicationContext
 import org.springframework.core.io.InputStreamResource
 import org.springframework.core.io.Resource
@@ -124,7 +121,7 @@ class QuestionsController(private val repository: QuestionRepository,
                 createFile.save()
                 val id = createFile.id
                 println("the is of the file is: $id")
-                question.video = Media(files[0].originalFilename, createFile.length, createFile.contentType, createFile.id.toString())
+                question.video = Media(files[0].originalFilename, createFile.length, createFile.contentType, id.toString())
                 return ResponseEntity(StatusResponseEntity(
                         true, "file created", repository.save(question)), HttpStatus.CREATED)
             } else { // this application type is
@@ -137,13 +134,12 @@ class QuestionsController(private val repository: QuestionRepository,
                 }
                 question.files = docs
                 repository.save(question)
-                return ResponseEntity(StatusResponseEntity<Question>(true, "files created", question), HttpStatus.CREATED)
+                return ResponseEntity(StatusResponseEntity(true, "files created", question), HttpStatus.CREATED)
             }
         } else {
             return ResponseEntity(StatusResponseEntity<Question>(true,
                     "sorry could not add files because we could not find that question"), HttpStatus.CREATED)
         }
-
     }
 
     // could make this a property
