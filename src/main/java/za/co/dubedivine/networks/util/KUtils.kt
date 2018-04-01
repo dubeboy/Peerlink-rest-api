@@ -114,5 +114,17 @@ object KUtils {
         }
     }
 
+    fun genMimeTypeForVideo(filename: String): String {
+        return when (filename.substringAfter(".")) {
+            "mp4" -> {
+                "video/mp4"
+            }
+            "3gp" -> {
+                "video/3gpp"
+            }
+            else -> "video/*"
+        }
+    }
+
 
 }

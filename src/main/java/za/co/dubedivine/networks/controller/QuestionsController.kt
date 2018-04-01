@@ -116,12 +116,14 @@ class QuestionsController(private val repository: QuestionRepository,
 
             println("the bucket name is:  ${fs.bucketName} and the db:  ${fs.db}")
             if (files.size == 1 && KUtils.isFileAVideo(files[0].contentType)) {  //not the best way of checking, but i know the client will restrict this
-                val createFile = fs.createFile(files[0].inputStream, questionId, true)
-                createFile.contentType = files[0].contentType
+                val createFile = fs.createFile(files[0].inputStream, files[0].originalFilename, true)
+                val mime = KUtils.genMimeTypeForVideo(files[0].originalFilename)
+                println("mime is: $mime" )
+                createFile.contentType = mime
+                createFile.put("questionId", questionId.toString())
                 createFile.save()
-                val id = createFile.id
-                println("the is of the file is: $id")
-                question.video = Media(files[0].originalFilename, createFile.length, Media.VIDEO_TYPE, id.toString())
+                println("the is of the file is: ${createFile.id}")
+                question.video = Media(files[0].originalFilename, createFile.length, Media.VIDEO_TYPE, createFile.id.toString())
                 val savedQuestion = repository.save(question)
                 saveQuestionOnElasticOnANewThread(savedQuestion)
                 return ResponseEntity(StatusResponseEntity(
@@ -129,8 +131,10 @@ class QuestionsController(private val repository: QuestionRepository,
             } else { // this application type is
                 val docs: ArrayList<Media> = arrayListOf()
                 files.forEach {
-                    val createFile = fs.createFile(it.inputStream, questionId, true)
+                    val createFile = fs.createFile(it.inputStream, it.originalFilename, true)
+                    //need to change this to map to the proper mime
                     createFile.contentType = it.contentType
+                    createFile.put("questionId", questionId.toString())
                     createFile.save()
                     docs.add(Media(
                             it.originalFilename,

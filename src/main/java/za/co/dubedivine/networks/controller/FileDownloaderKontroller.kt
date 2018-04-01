@@ -33,10 +33,6 @@ class FileDownloaderKontroller(mongoTemplate: MongoTemplate) {
                 println("input stream available is ${inputStream.available()}")
                 val byteArray = getBytes(inputStream)
                 val byteArrayResource = ByteArrayResource(byteArray)
-
-//                IOUtils.readFully()
-
-
                 val contentType = gridFSDBFile.contentType
                 val filename = gridFSDBFile.filename
 
