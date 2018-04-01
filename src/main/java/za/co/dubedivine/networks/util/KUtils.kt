@@ -8,9 +8,11 @@ import org.springframework.http.ResponseEntity
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor
 import za.co.dubedivine.networks.config.AppConfig
 import za.co.dubedivine.networks.model.Media
+import za.co.dubedivine.networks.model.Question
 import za.co.dubedivine.networks.model.Tag
 import za.co.dubedivine.networks.model.elastic.ElasticTag
 import za.co.dubedivine.networks.model.responseEntity.StatusResponseEntity
+import za.co.dubedivine.networks.services.elastic.ElasticQuestionService
 import java.util.regex.Pattern
 
 object KUtils {
@@ -124,6 +126,18 @@ object KUtils {
             }
             else -> "video/*"
         }
+    }
+
+    fun saveQuestionOnElasticOnANewThread( elasticQuestionService: ElasticQuestionService,
+                                                   taskExecutor: ThreadPoolTaskExecutor,
+                                                   question: Question) {
+        taskExecutor.execute({
+            updateElasticQuestion(elasticQuestionService, question)
+        })
+    }
+
+    private fun updateElasticQuestion(elasticQuestionService: ElasticQuestionService, question: Question) {
+        elasticQuestionService.saveQuestionToElastic(question)
     }
 
 

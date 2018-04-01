@@ -4,7 +4,6 @@ import org.springframework.data.annotation.Id;
 import org.springframework.data.elasticsearch.annotations.Field;
 import org.springframework.data.elasticsearch.annotations.FieldType;
 import org.springframework.data.mongodb.core.index.Indexed;
-import org.springframework.data.mongodb.core.index.TextIndexed;
 import za.co.dubedivine.networks.model.*;
 
 import java.util.ArrayList;
@@ -20,8 +19,8 @@ public abstract class QuestionBase {
     private String body;
     private long votes;
     @Field(type = FieldType.Nested)
-    private ArrayList<Comment> comments;
-    private ArrayList<Answer> answers;
+    private ArrayList<Comment> comments = new ArrayList<>();
+    private ArrayList<Answer> answers = new ArrayList<>();
     @Indexed
     @Field(type = FieldType.Nested)
     private List<Tag> tags;  //todo: bad it should be mapping!!
@@ -129,5 +128,23 @@ public abstract class QuestionBase {
 
     public void setFiles(List<Media> files) {
         this.files = files;
+    }
+
+    @Override
+    public String toString() {
+        return "QuestionBase{" +
+                "id='" + id + '\'' +
+                ", title='" + title + '\'' +
+                ", body='" + body + '\'' +
+                ", votes=" + votes +
+                ", comments=" + comments +
+                ", answers=" + answers +
+                ", tags=" + tags +
+                ", user=" + user +
+                ", type='" + type + '\'' +
+                ", video=" + video +
+                ", files=" + files +
+                ", createdAt=" + createdAt +
+                '}';
     }
 }

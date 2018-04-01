@@ -1,5 +1,7 @@
 package za.co.dubedivine.networks.model;
 
+import org.springframework.data.elasticsearch.annotations.Field;
+import org.springframework.data.elasticsearch.annotations.FieldType;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.util.ArrayList;
@@ -19,6 +21,7 @@ public class Answer {
     private ArrayList<Comment> comments = new ArrayList<>();
     private Media video;
     private String id = UUID.randomUUID().toString();
+    private List<Media> files;
 
     public Answer() {
     }
@@ -67,6 +70,9 @@ public class Answer {
     public Media getVideo() {
         return video;
     }
+    public void setVideo(Media video) {
+        this.video = video;
+    }
 
     public String getId() {
         return id;
@@ -76,4 +82,26 @@ public class Answer {
     // public String toString() {
 
     // }
+
+
+    @Override
+    public String toString() {
+        return "Answer{" +
+                "body='" + body + '\'' +
+                ", votes=" + votes +
+                ", isChoosen=" + isChoosen +
+                ", createAt=" + createAt +
+                ", comments=" + comments +
+                ", video=" + video +
+                ", id='" + id + '\'' +
+                '}';
+    }
+
+    public List<Media> getFiles() {
+        return files;
+    }
+
+    public void setFiles(List<Media> files) {
+        this.files = files;
+    }
 }

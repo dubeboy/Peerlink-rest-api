@@ -32,4 +32,13 @@ public class Comment {
     public Date getCreatedAt() {
         return createdAt;
     }
+
+    @Override
+    public String toString() {
+        return "Comment{" +
+                "body='" + body + '\'' +
+                ", votes=" + votes +
+                ", createdAt=" + createdAt +
+                '}';
+    }
 }

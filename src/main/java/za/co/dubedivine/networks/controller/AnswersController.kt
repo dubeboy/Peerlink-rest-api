@@ -4,12 +4,17 @@ import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor
+import org.springframework.util.MimeType
 import org.springframework.web.bind.annotation.*
+import org.springframework.web.multipart.MultipartFile
 import za.co.dubedivine.networks.model.Answer
 import za.co.dubedivine.networks.model.Comment
+import za.co.dubedivine.networks.model.Media
+import za.co.dubedivine.networks.model.Question
 import za.co.dubedivine.networks.model.responseEntity.StatusResponseEntity
 import za.co.dubedivine.networks.repository.QuestionRepository
 import za.co.dubedivine.networks.services.elastic.ElasticQuestionService
+import za.co.dubedivine.networks.util.KUtils
 import java.util.ArrayList
 
 @RestController
@@ -86,5 +91,72 @@ class AnswersController(//operations that can be done on a Answers
             }
         return ResponseEntity(StatusResponseEntity<Answer>(false,
                 "no such answer found can be found", null), HttpStatus.BAD_REQUEST)
+    }
+
+    @PostMapping("/{q_id}/answer/{a_id}/files")
+    fun addFiles(@PathVariable("q_id") questionId: String,
+                 @PathVariable("a_id") answerId: String,
+                 @RequestPart files: List<MultipartFile>): ResponseEntity<StatusResponseEntity<Question>> {
+        val question = questionRepository.findOne(questionId)
+        if ((question) != null) {
+            var answer: Answer? = null
+
+            // look for the answer in the question using it ID and then
+            // we assign it to answer
+            for (it in question.answers) {
+                if (it.id == answerId) {
+                    answer = it
+                    break
+                }
+            }
+
+            if (answer != null) {
+                val fs = KUtils.getGridFs(mongoTemplate)
+                println("the bucket name is:  ${fs.bucketName} and the db:  ${fs.db}")
+                if (files.size == 1 && KUtils.isFileAVideo(files[0].contentType)) {  //not the best way of checking, but i know the client will restrict this
+
+                    val createFile = fs.createFile(files[0].inputStream, files[0].originalFilename, true)
+                    val mime = KUtils.genMimeTypeForVideo(files[0].originalFilename)
+                    println("mime is: $mime")
+                    createFile.contentType = mime
+                    createFile.put("questionId", questionId.toString())
+                    createFile.save()
+                    println("the is of the file is: ${createFile.id}")
+
+                    answer.video = Media(files[0].originalFilename, createFile.length, Media.VIDEO_TYPE, createFile.id.toString())
+                    val savedQuestion = questionRepository.save(question)
+                    println(savedQuestion)
+                    KUtils.saveQuestionOnElasticOnANewThread(elasticQuestionService, taskExecutor, savedQuestion)
+                    return ResponseEntity(StatusResponseEntity(
+                            true, "file created", savedQuestion), HttpStatus.CREATED)
+                } else { // this application type is
+                    val docs: ArrayList<Media> = arrayListOf()
+                    files.forEach {
+                        val createFile = fs.createFile(it.inputStream, it.originalFilename, true)
+                        //need to change this to map to the proper mime
+                     //   MimeType.valueOf()
+                        createFile.contentType = it.contentType
+                        createFile.put("questionId", questionId)
+                        createFile.save()
+                        docs.add(Media(
+                                it.originalFilename,
+                                createFile.length,
+                                KUtils.genMediaTypeFromContentType(createFile.contentType),
+                                createFile.id.toString()))
+                    }
+                    answer.files = docs
+                    val savedQuestion = questionRepository.save(question)
+                    KUtils.saveQuestionOnElasticOnANewThread(elasticQuestionService, taskExecutor, savedQuestion)
+                    return ResponseEntity(StatusResponseEntity(true, "files created", question), HttpStatus.CREATED)
+                }
+            } else {
+                return ResponseEntity(StatusResponseEntity<Question>(false,
+                        "sorry could not add files because we could not find that question"), HttpStatus.NOT_FOUND)
+            }
+        } else {
+            // todo look in
+            return ResponseEntity(StatusResponseEntity<Question>(false,
+                    "sorry could not add files because we could not find that question"), HttpStatus.NOT_FOUND)
+        }
     }
 }

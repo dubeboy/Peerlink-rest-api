@@ -58,7 +58,7 @@ class FileDownloaderKontroller(mongoTemplate: MongoTemplate) {
     @Throws(IOException::class)
     fun getBytes(inputStream: InputStream): ByteArray {
         var buf = ByteArray(1024)
-        val bos = ByteArrayOutputStream(1025)
+        val bos = ByteArrayOutputStream(1024)
         while (inputStream.read(buf) != -1) {
             bos.write(buf)
         }

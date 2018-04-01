@@ -55,4 +55,15 @@ public class Media {
 
     public Media() {
     }
+
+    @Override
+    public String toString() {
+        return "Media{" +
+                "name='" + name + '\'' +
+                ", size=" + size +
+                ", type=" + type +
+                ", location='" + location + '\'' +
+                ", createAt=" + createAt +
+                '}';
+    }
 }

@@ -25,6 +25,7 @@ import za.co.dubedivine.networks.repository.elastic.ElasticTagRepo
 import za.co.dubedivine.networks.services.elastic.ElasticQuestionService
 import za.co.dubedivine.networks.util.KUtils
 import java.util.*
+import za.co.dubedivine.networks.util.KUtils.saveQuestionOnElasticOnANewThread
 
 //todo: handling invalid data an duplicate data
 //todo: split tags and questions
@@ -118,14 +119,14 @@ class QuestionsController(private val repository: QuestionRepository,
             if (files.size == 1 && KUtils.isFileAVideo(files[0].contentType)) {  //not the best way of checking, but i know the client will restrict this
                 val createFile = fs.createFile(files[0].inputStream, files[0].originalFilename, true)
                 val mime = KUtils.genMimeTypeForVideo(files[0].originalFilename)
-                println("mime is: $mime" )
+                println("mime is: $mime")
                 createFile.contentType = mime
                 createFile.put("questionId", questionId.toString())
                 createFile.save()
                 println("the is of the file is: ${createFile.id}")
                 question.video = Media(files[0].originalFilename, createFile.length, Media.VIDEO_TYPE, createFile.id.toString())
                 val savedQuestion = repository.save(question)
-                saveQuestionOnElasticOnANewThread(savedQuestion)
+                saveQuestionOnElasticOnANewThread(elasticQuestionService,taskExecutor, savedQuestion)
                 return ResponseEntity(StatusResponseEntity(
                         true, "file created", savedQuestion), HttpStatus.CREATED)
             } else { // this application type is
@@ -144,25 +145,20 @@ class QuestionsController(private val repository: QuestionRepository,
                 }
                 question.files = docs
                 val savedQuestion = repository.save(question)
-                saveQuestionOnElasticOnANewThread(savedQuestion)
+                saveQuestionOnElasticOnANewThread(elasticQuestionService,taskExecutor, savedQuestion)
                 return ResponseEntity(StatusResponseEntity(true, "files created", question), HttpStatus.CREATED)
             }
         } else {
-            return ResponseEntity(StatusResponseEntity<Question>(true,
-                    "sorry could not add files because we could not find that question"), HttpStatus.CREATED)
+            return ResponseEntity(StatusResponseEntity<Question>(false,
+                    "sorry could not add files because we could not find that question"), HttpStatus.NOT_FOUND)
         }
     }
 
-    private fun updateElasticQuestion(question: Question) {
-        elasticQuestionService.saveQuestionToElastic(question)
-    }
+
+
 
     // we do this so that we dont block anything
-    private fun saveQuestionOnElasticOnANewThread(question: Question) {
-        taskExecutor.execute({
-            updateElasticQuestion(question)
-        })
-    }
+
     // could make this a property
     private fun getGridFSInstance() = KUtils.getGridFs(mongoTemplate)
 
