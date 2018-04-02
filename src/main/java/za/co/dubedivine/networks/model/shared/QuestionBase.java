@@ -14,8 +14,10 @@ import java.util.List;
 //this should hae probably been an interface
 public abstract class QuestionBase {
 
-    protected @Id String id;  // protected because it has a setter in the Elastic question child class
-    private @Indexed  String title;
+    protected @Id
+    String id;  // protected because it has a setter in the Elastic question child class
+    private @Indexed
+    String title;
     private String body;
     private long votes;
     @Field(type = FieldType.Nested)
@@ -26,10 +28,15 @@ public abstract class QuestionBase {
     private List<Tag> tags;  //todo: bad it should be mapping!!
     private User user; // the user the
     private String type;
-    private @Field(type = FieldType.Nested) Media video;
-    private @Field(type = FieldType.Nested) List<Media> files; //this can be combined with video dwag
-    private @Field(type= FieldType.Date) Date createdAt = new Date();
+    private @Field(type = FieldType.Nested)
+    Media video;
+    private @Field(type = FieldType.Nested)
+    List<Media> files; //this can be combined with video dwag
+    private @Field(type = FieldType.Date)
+    Date createdAt = new Date();
 
+
+    // satisfy jackson
     public QuestionBase() {
 
     }
@@ -52,6 +59,7 @@ public abstract class QuestionBase {
         this.type = type;
         this.video = video;
     }
+
     public QuestionBase(String title, String body, long votes, List<Tag> tags, String type, List<Media> files) {
         this.title = title;
         this.body = body;
@@ -82,6 +90,7 @@ public abstract class QuestionBase {
     public long getVotes() {
         return votes;
     }
+
     public void setVotes(long votes) {
         this.votes = votes;
     }
@@ -146,5 +155,13 @@ public abstract class QuestionBase {
                 ", files=" + files +
                 ", createdAt=" + createdAt +
                 '}';
+    }
+
+    public void setUser(User user) {
+        this.user = user;
+    }
+
+    public User getUser() {
+        return user;
     }
 }

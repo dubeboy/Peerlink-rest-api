@@ -7,14 +7,13 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor
 import org.springframework.util.MimeType
 import org.springframework.web.bind.annotation.*
 import org.springframework.web.multipart.MultipartFile
-import za.co.dubedivine.networks.model.Answer
-import za.co.dubedivine.networks.model.Comment
-import za.co.dubedivine.networks.model.Media
-import za.co.dubedivine.networks.model.Question
+import za.co.dubedivine.networks.model.*
 import za.co.dubedivine.networks.model.responseEntity.StatusResponseEntity
 import za.co.dubedivine.networks.repository.QuestionRepository
+import za.co.dubedivine.networks.repository.VoteEntityBridgeRepository
 import za.co.dubedivine.networks.services.elastic.ElasticQuestionService
 import za.co.dubedivine.networks.util.KUtils
+import za.co.dubedivine.networks.util.KUtils.createVoteEntity
 import java.util.ArrayList
 
 @RestController
@@ -23,6 +22,7 @@ class AnswersController(//operations that can be done on a Answers
         private val questionRepository: QuestionRepository,
         private val taskExecutor: ThreadPoolTaskExecutor,
         private val mongoTemplate: MongoTemplate,
+        private val voteEntityBridgeRepo: VoteEntityBridgeRepository,
         private val elasticQuestionService: ElasticQuestionService) {
 
     //todo: duplicates every time I save
@@ -53,22 +53,40 @@ class AnswersController(//operations that can be done on a Answers
     @PostMapping("/{q_id}/answer/{a_id}/vote") //updating
     fun voteAnswer(@PathVariable("q_id") questionId: String,
                    @PathVariable("a_id") ans: String,
-                   @RequestParam("vote") vote: Boolean): ResponseEntity<StatusResponseEntity<Answer>> {
-        val answers: MutableList<Answer>
-        val question = questionRepository.findOne(questionId)
-        answers = question.answers
-        for (answer in answers) {
-            if (answer.id == ans) {
-                if (vote) answer.votes = answer.votes + 1 else answer.votes = answer.votes - 1
-                questionRepository.save(question)
-                return ResponseEntity(StatusResponseEntity<Answer>(true,
-                        "Vote ${if (vote) "added" else "removed"} ", null),
-                        HttpStatus.OK)
+                   @RequestParam("vote") vote: Boolean,
+                   @RequestParam("user_id") userId: String): ResponseEntity<StatusResponseEntity<Answer>> {
+        val voted =
+                try {
+                    val voteDirection: Boolean = voteEntityBridgeRepo.findOne(Pair(questionId, userId)).isVoteTheSameDirection == vote
+                    voteEntityBridgeRepo.exists(Pair(questionId, userId)) && voteDirection
+                } catch (npe: NullPointerException) {
+                    false
+                }
+
+        if (voted) {
+            return ResponseEntity(StatusResponseEntity<Answer>(false,
+                    "you have already voted", null),
+                    HttpStatus.OK)
+        } else {
+            createVoteEntity(voteEntityBridgeRepo, Pair(questionId, userId), vote)
+            val answers: MutableList<Answer>
+            val question = questionRepository.findOne(questionId)
+            answers = question.answers
+            for (answer in answers) {
+                if (answer.id == ans) {
+                    if (vote) answer.votes = answer.votes + 1 else answer.votes = answer.votes - 1
+                    questionRepository.save(question)
+                    return ResponseEntity(StatusResponseEntity<Answer>(true,
+                            "Vote ${if (vote) "added" else "removed"} ", null),
+                            HttpStatus.OK)
+                }
             }
+            return ResponseEntity(StatusResponseEntity<Answer>(false,
+                    "sorry we cannot find this answer that you want to vote on", null), HttpStatus.BAD_REQUEST)
         }
-        return ResponseEntity(StatusResponseEntity<Answer>(false,
-                "sorry we cannot find this answer that you want to vote on", null), HttpStatus.BAD_REQUEST)
     }
+
+
 
     @PostMapping("/{q_id}/answer/{a_id}/comment")
     fun commentOnAnswer(@PathVariable("q_id") questionId: String,

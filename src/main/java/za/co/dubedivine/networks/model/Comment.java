@@ -12,6 +12,7 @@ public class Comment {
     private String body;
     private long votes;
     private Date createdAt = new Date();
+    private User user;
 
 
     public Comment() {
@@ -40,5 +41,13 @@ public class Comment {
                 ", votes=" + votes +
                 ", createdAt=" + createdAt +
                 '}';
+    }
+
+    public User getUser() {
+        return user;
+    }
+
+    public void setUser(User user) {
+        this.user = user;
     }
 }

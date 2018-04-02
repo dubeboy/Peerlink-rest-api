@@ -10,8 +10,10 @@ import za.co.dubedivine.networks.config.AppConfig
 import za.co.dubedivine.networks.model.Media
 import za.co.dubedivine.networks.model.Question
 import za.co.dubedivine.networks.model.Tag
+import za.co.dubedivine.networks.model.VoteEntityBridge
 import za.co.dubedivine.networks.model.elastic.ElasticTag
 import za.co.dubedivine.networks.model.responseEntity.StatusResponseEntity
+import za.co.dubedivine.networks.repository.VoteEntityBridgeRepository
 import za.co.dubedivine.networks.services.elastic.ElasticQuestionService
 import java.util.regex.Pattern
 
@@ -138,6 +140,15 @@ object KUtils {
 
     private fun updateElasticQuestion(elasticQuestionService: ElasticQuestionService, question: Question) {
         elasticQuestionService.saveQuestionToElastic(question)
+    }
+
+    fun createVoteEntity(voteEntityBridgeRepo: VoteEntityBridgeRepository, id : Pair<String, String>, voteDirection: Boolean): VoteEntityBridge {
+        if (voteEntityBridgeRepo.exists(id)) {
+            return voteEntityBridgeRepo.findOne(id)
+        } else {
+            // if the user voted the other direction then we update the direction to the new direction
+            return voteEntityBridgeRepo.save(VoteEntityBridge(id, voteDirection))
+        }
     }
 
 

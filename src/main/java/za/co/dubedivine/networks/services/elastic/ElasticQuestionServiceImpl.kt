@@ -93,6 +93,7 @@ class ElasticQuestionServiceImpl(private val elasticQRepo: ElasticQRepo,
         eQ.id = question.id
         eQ.files = question.files
         eQ.video = question.video
+        eQ.user = question.user
         return elasticQRepo.save(eQ)
     }
 }

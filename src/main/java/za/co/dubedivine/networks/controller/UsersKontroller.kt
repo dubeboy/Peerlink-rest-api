@@ -24,7 +24,10 @@ class UsersKontroller(private val userRepository: UserRepository,
                 user.degree != null &&
                 user.degree.isNotBlank()) {
 
-            tagRepository.save(Tag(user.degree))
+            tagRepository.save(Tag(changeDegree(user.degree)))
+            for (module in user.modules) {
+                tagRepository.save(Tag(changeDegree(module)))
+            }
             user.tags.add(Tag(changeDegree(user.degree)))
             return ResponseEntity(StatusResponseEntity(true,
                     "Created a new account", userRepository.save(user)),
@@ -43,6 +46,6 @@ class UsersKontroller(private val userRepository: UserRepository,
     }
 
     fun changeDegree(degree: String): String {
-        return degree
+        return degree.trim().replace(" ", "_").toUpperCase()
     }
 }

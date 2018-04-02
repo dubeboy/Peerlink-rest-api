@@ -13,7 +13,7 @@ import java.util.UUID;
  * Created by divine on 2017/08/13.
  */
 @Document
-public class Answer {
+public class Answer  {
     private String body;
     private long votes;
     private boolean isChoosen;
@@ -22,6 +22,7 @@ public class Answer {
     private Media video;
     private String id = UUID.randomUUID().toString();
     private List<Media> files;
+    private User user;
 
     public Answer() {
     }
@@ -103,5 +104,13 @@ public class Answer {
 
     public void setFiles(List<Media> files) {
         this.files = files;
+    }
+
+    public User getUser() {
+        return user;
+    }
+
+    public void setUser(User user) {
+        this.user = user;
     }
 }

@@ -21,6 +21,8 @@ import za.co.dubedivine.networks.model.elastic.ElasticTag
 import za.co.dubedivine.networks.model.responseEntity.StatusResponseEntity
 import za.co.dubedivine.networks.repository.QuestionRepository
 import za.co.dubedivine.networks.repository.TagRepository
+import za.co.dubedivine.networks.repository.UserRepository
+import za.co.dubedivine.networks.repository.VoteEntityBridgeRepository
 import za.co.dubedivine.networks.repository.elastic.ElasticTagRepo
 import za.co.dubedivine.networks.services.elastic.ElasticQuestionService
 import za.co.dubedivine.networks.util.KUtils
@@ -36,6 +38,8 @@ class QuestionsController(private val repository: QuestionRepository,
                           private val tagRepository: TagRepository,
                           private val elasticQuestionService: ElasticQuestionService,
                           private val elasticTagRepo: ElasticTagRepo,
+                          private val userRepository: UserRepository,
+                          private val voteEntityBridgeRepo: VoteEntityBridgeRepository,
                           private val mongoTemplate: MongoTemplate) {
 
     private final val context = AnnotationConfigApplicationContext(AppConfig::class.java)
@@ -75,11 +79,14 @@ class QuestionsController(private val repository: QuestionRepository,
                 KUtils.instantiateElasticTag(savedTag) // the last line returned!!s
             }
         }
+        val user = userRepository.findOne(question.user.id)
+        question.user = user
         val q = repository.insert(question)
         taskExecutor.execute {
             //should stop auto enable mongo and then i can create a mongo template
             val elasticQuestion = ElasticQuestion(q.title, q.body, q.votes, q.tags, q.type)
             elasticQuestion.id = q.id
+            elasticQuestion.user = user
             elasticQuestionService.save(elasticQuestion)
             elasticTagRepo.save(elasticTagToSave)
         }
@@ -154,11 +161,6 @@ class QuestionsController(private val repository: QuestionRepository,
         }
     }
 
-
-
-
-    // we do this so that we dont block anything
-
     // could make this a property
     private fun getGridFSInstance() = KUtils.getGridFs(mongoTemplate)
 
@@ -224,9 +226,11 @@ class QuestionsController(private val repository: QuestionRepository,
     fun commentOnQuestion(@PathVariable("q_id") questionId: String,
                           @RequestBody comment: Comment): ResponseEntity<StatusResponseEntity<Answer>> {
         val question = repository.findOne(questionId)
-        // todo: what happens if we cannot find the question!!!
+        // todo: what happens if we cannot find the question!!!, it will crash and return a very hepfull spring msg
+        comment.user = userRepository.findOne(comment.user.id)
         val comments = question.comments
         comments.add(comment)
+
         repository.save(question)
         return ResponseEntity(StatusResponseEntity<Answer>(true,
                 "Comment added on question", null),
@@ -234,13 +238,30 @@ class QuestionsController(private val repository: QuestionRepository,
     }
 
     @PostMapping("/{q_id}/vote") //updating
-    fun voteAnswer(@PathVariable("q_id") questionId: String,
-                   @RequestParam("vote") vote: Boolean): ResponseEntity<StatusResponseEntity<Answer>> {
-        val question = repository.findOne(questionId)
-        if (vote) question.votes = question.votes + 1 else question.votes = question.votes - 1
-        repository.save(question)
-        return ResponseEntity(StatusResponseEntity<Answer>(true,
-                "Vote ${if (vote) "added" else "removed"} ", null),
-                HttpStatus.OK)
+    fun voteQuestion(@PathVariable("q_id") questionId: String,
+                   @RequestParam("vote") vote: Boolean,
+                   @RequestParam("user_id") userId: String): ResponseEntity<StatusResponseEntity<Answer>> { // <answer??> any ways its null
+        val voted =
+                try {
+                    val voteDirection: Boolean = voteEntityBridgeRepo.findOne(Pair(questionId, userId)).isVoteTheSameDirection == vote
+                    voteEntityBridgeRepo.exists(Pair(questionId, userId)) && voteDirection
+                } catch (npe: NullPointerException) {
+                    false
+                }
+        return when {
+            voted -> ResponseEntity(StatusResponseEntity<Answer>(false,
+                    "No vote casted mate", null),
+                    HttpStatus.OK)
+            else -> {
+                KUtils.createVoteEntity(voteEntityBridgeRepo, Pair(questionId, userId), vote)
+                val question = repository.findOne(questionId)
+                if (vote) question.votes = question.votes + 1 else question.votes = question.votes - 1
+                repository.save(question)
+                ResponseEntity(StatusResponseEntity<Answer>(true,
+                        "Vote ${if (vote) "added" else "removed"} ", null),
+                        HttpStatus.OK)
+            }
+        }
+
     }
 }

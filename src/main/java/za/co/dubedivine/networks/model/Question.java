@@ -14,7 +14,7 @@ public class Question extends QuestionBase {
 
    public Question() {
 
-    }
+   }
 
     public Question(String title, String body, long votes, List<Tag> tags, String type) {
         super(title, body, votes, tags, type);
