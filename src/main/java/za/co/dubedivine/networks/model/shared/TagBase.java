@@ -1,5 +1,6 @@
 package za.co.dubedivine.networks.model.shared;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.index.Indexed;
 import za.co.dubedivine.networks.model.Question;
@@ -13,6 +14,7 @@ public abstract class TagBase {
     @Id
     private String name;  // name is the ID means
     private Date createAt = new Date();
+    @JsonIgnore
     private List<Question> questions;
 
     public TagBase(String name) {

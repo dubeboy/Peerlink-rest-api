@@ -91,4 +91,8 @@ public class User {
     public void setModules(Set<String> modules) {
         this.modules = modules;
     }
+
+    public void addTag(Tag tag) {
+        tags.add(tag);
+    }
 }

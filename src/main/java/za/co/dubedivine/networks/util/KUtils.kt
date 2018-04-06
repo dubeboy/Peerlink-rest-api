@@ -1,5 +1,6 @@
 package za.co.dubedivine.networks.util
 
+import com.mongodb.BasicDBObject
 import com.mongodb.gridfs.GridFS
 import org.springframework.context.annotation.AnnotationConfigApplicationContext
 import org.springframework.data.mongodb.core.MongoTemplate
@@ -7,14 +8,13 @@ import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor
 import za.co.dubedivine.networks.config.AppConfig
-import za.co.dubedivine.networks.model.Media
-import za.co.dubedivine.networks.model.Question
-import za.co.dubedivine.networks.model.Tag
-import za.co.dubedivine.networks.model.VoteEntityBridge
+import za.co.dubedivine.networks.model.*
 import za.co.dubedivine.networks.model.elastic.ElasticTag
 import za.co.dubedivine.networks.model.responseEntity.StatusResponseEntity
+import za.co.dubedivine.networks.repository.UserRepository
 import za.co.dubedivine.networks.repository.VoteEntityBridgeRepository
 import za.co.dubedivine.networks.services.elastic.ElasticQuestionService
+import za.co.dubedivine.networks.services.notification.SendPushNotificationsService
 import java.util.regex.Pattern
 
 object KUtils {
@@ -151,5 +151,21 @@ object KUtils {
         }
     }
 
+
+    fun sendPushNotifications(userRepository: UserRepository,
+                              notification: SendPushNotificationsService,
+                              question: Question,
+                              answer: Answer? = null) {
+
+        val userSet = HashSet<User>()
+        for (tag in question.tags) {
+            print("for this tag $tag")
+            val users = userRepository.findAllByTag(tag.name)
+            println(" found $users")
+            userSet.addAll(users)
+        }
+        println(" and the user userSet $userSet")
+        notification.notifyOnNewQuestion(question, userSet)
+    }
 
 }

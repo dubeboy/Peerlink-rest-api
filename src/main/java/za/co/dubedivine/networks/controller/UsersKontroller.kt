@@ -8,6 +8,7 @@ import za.co.dubedivine.networks.model.User
 import za.co.dubedivine.networks.model.responseEntity.StatusResponseEntity
 import za.co.dubedivine.networks.repository.TagRepository
 import za.co.dubedivine.networks.repository.UserRepository
+import za.co.dubedivine.networks.util.KUtils
 
 @RestController
 @RequestMapping("users")
@@ -24,9 +25,11 @@ class UsersKontroller(private val userRepository: UserRepository,
                 user.degree != null &&
                 user.degree.isNotBlank()) {
 
-            tagRepository.save(Tag(changeDegree(user.degree)))
+            tagRepository.save(Tag(changeDegree(user.degree.toUpperCase())))
             for (module in user.modules) {
-                tagRepository.save(Tag(changeDegree(module)))
+                val tag = Tag(changeDegree(module.trim().capitalize()))
+                tagRepository.save(tag)
+                user.tags.add(tag)
             }
             user.tags.add(Tag(changeDegree(user.degree)))
             return ResponseEntity(StatusResponseEntity(true,
@@ -39,13 +42,14 @@ class UsersKontroller(private val userRepository: UserRepository,
     }
 
     //i need to get the users tags
-    @GetMapping("/{u_id}/tags")
-    fun getTags(@PathVariable userId: String): List<Tag> {
+    // the path does not conform to our standards
+    @GetMapping("tags_subscribed/{u_id}")
+    fun getTags(@PathVariable("u_id") userId: String): ResponseEntity<StatusResponseEntity<List<Tag>>> {
         val user = userRepository.findOne(userId)
-        return user.tags
+        return KUtils.respond(true, "", user.tags)
     }
 
     fun changeDegree(degree: String): String {
-        return degree.trim().replace(" ", "_").toUpperCase()
+        return degree.trim().replace(" ", "_")
     }
 }

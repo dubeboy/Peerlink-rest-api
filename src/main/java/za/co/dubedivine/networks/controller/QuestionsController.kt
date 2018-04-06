@@ -25,9 +25,11 @@ import za.co.dubedivine.networks.repository.UserRepository
 import za.co.dubedivine.networks.repository.VoteEntityBridgeRepository
 import za.co.dubedivine.networks.repository.elastic.ElasticTagRepo
 import za.co.dubedivine.networks.services.elastic.ElasticQuestionService
+import za.co.dubedivine.networks.services.notification.SendPushNotificationsService
 import za.co.dubedivine.networks.util.KUtils
 import java.util.*
 import za.co.dubedivine.networks.util.KUtils.saveQuestionOnElasticOnANewThread
+import za.co.dubedivine.networks.util.KUtils.sendPushNotifications
 
 //todo: handling invalid data an duplicate data
 //todo: split tags and questions
@@ -40,7 +42,8 @@ class QuestionsController(private val repository: QuestionRepository,
                           private val elasticTagRepo: ElasticTagRepo,
                           private val userRepository: UserRepository,
                           private val voteEntityBridgeRepo: VoteEntityBridgeRepository,
-                          private val mongoTemplate: MongoTemplate) {
+                          private val mongoTemplate: MongoTemplate,
+                          private val notification: SendPushNotificationsService) {
 
     private final val context = AnnotationConfigApplicationContext(AppConfig::class.java)
     // could just inject this
@@ -58,12 +61,15 @@ class QuestionsController(private val repository: QuestionRepository,
     fun getQuestion(@PathVariable("q_id") questionId: String): ResponseEntity<StatusResponseEntity<Question>> {
         val q = repository.findOne(questionId)
         return ResponseEntity(StatusResponseEntity(q != null,
-                if(q == null ) "could not find question" else "", q), HttpStatus.CREATED)
+                if (q == null) "could not find question" else "", q), HttpStatus.CREATED)
     }
+
     //needs a major refactoring
     @PutMapping //adding anew entity
     fun addQuestion(@RequestBody question: Question): ResponseEntity<StatusResponseEntity<Question>> {
         var elasticTagToSave: ElasticTag? = null
+        val user = userRepository.findOne(question.user.id)
+
         question.tags.forEach {
             val tag = tagRepository.findFirstByName(it.name)
             //todo: bad bro
@@ -72,14 +78,20 @@ class QuestionsController(private val repository: QuestionRepository,
                 //we don`t have to do anything more here all we have to do is
                 val foundTag = tagRepository.findFirstByName(it.name)
                 foundTag.addQuestion(question)
-                tagRepository.save(foundTag)
+                //       val savedTag = tagRepository.save(foundTag)
+                // the tag exists but then the user might have it
+                if (!user.tags.contains(tag)) {
+                    user.addTag(foundTag) //todo this should replaced by a userTagBridge
+                }
                 KUtils.instantiateElasticTag(foundTag)
             } else { // else create the tag
                 val savedTag = tagRepository.save(it)
+                // the tag does not exit so the user definitely  does not have it
+                user.addTag(savedTag)
                 KUtils.instantiateElasticTag(savedTag) // the last line returned!!s
             }
         }
-        val user = userRepository.findOne(question.user.id)
+
         question.user = user
         val q = repository.insert(question)
         taskExecutor.execute {
@@ -87,19 +99,21 @@ class QuestionsController(private val repository: QuestionRepository,
             val elasticQuestion = ElasticQuestion(q.title, q.body, q.votes, q.tags, q.type)
             elasticQuestion.id = q.id
             elasticQuestion.user = user
+            userRepository.save(user) // update the tags for this user
+            sendPushNotifications(userRepository, notification, q)  //sends notification to the users
             elasticQuestionService.save(elasticQuestion)
             elasticTagRepo.save(elasticTagToSave)
         }
-        val uri = ServletUriComponentsBuilder
-                .fromCurrentRequest()
-                .path("/{id}")
-                .buildAndExpand(question.id).toUri()
+
+        val uri = ServletUriComponentsBuilder.fromCurrentRequest().path("/{id}").buildAndExpand(question.id).toUri()
         val httpHeaders = HttpHeaders()
         httpHeaders.location = uri
 
         return ResponseEntity(StatusResponseEntity(true,
                 "saved question", q), httpHeaders, HttpStatus.CREATED)
     }
+
+
 
     @PostMapping //for editing
     fun editQuestion(@RequestBody question: Question) {
@@ -133,7 +147,7 @@ class QuestionsController(private val repository: QuestionRepository,
                 println("the is of the file is: ${createFile.id}")
                 question.video = Media(files[0].originalFilename, createFile.length, Media.VIDEO_TYPE, createFile.id.toString())
                 val savedQuestion = repository.save(question)
-                saveQuestionOnElasticOnANewThread(elasticQuestionService,taskExecutor, savedQuestion)
+                saveQuestionOnElasticOnANewThread(elasticQuestionService, taskExecutor, savedQuestion)
                 return ResponseEntity(StatusResponseEntity(
                         true, "file created", savedQuestion), HttpStatus.CREATED)
             } else { // this application type is
@@ -152,7 +166,7 @@ class QuestionsController(private val repository: QuestionRepository,
                 }
                 question.files = docs
                 val savedQuestion = repository.save(question)
-                saveQuestionOnElasticOnANewThread(elasticQuestionService,taskExecutor, savedQuestion)
+                saveQuestionOnElasticOnANewThread(elasticQuestionService, taskExecutor, savedQuestion)
                 return ResponseEntity(StatusResponseEntity(true, "files created", question), HttpStatus.CREATED)
             }
         } else {
@@ -239,8 +253,8 @@ class QuestionsController(private val repository: QuestionRepository,
 
     @PostMapping("/{q_id}/vote") //updating
     fun voteQuestion(@PathVariable("q_id") questionId: String,
-                   @RequestParam("vote") vote: Boolean,
-                   @RequestParam("user_id") userId: String): ResponseEntity<StatusResponseEntity<Answer>> { // <answer??> any ways its null
+                     @RequestParam("vote") vote: Boolean,
+                     @RequestParam("user_id") userId: String): ResponseEntity<StatusResponseEntity<Answer>> { // <answer??> any ways its null
         val voted =
                 try {
                     val voteDirection: Boolean = voteEntityBridgeRepo.findOne(Pair(questionId, userId)).isVoteTheSameDirection == vote
