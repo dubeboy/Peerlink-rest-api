@@ -7,10 +7,10 @@ import org.springframework.messaging.simp.SimpMessageSendingOperations
 import org.springframework.stereotype.Component
 import org.springframework.web.socket.messaging.SessionConnectedEvent
 
-@Component
+//@Component
 class  NotificationEventListener(private val template: SimpMessageSendingOperations) {
 
-    @EventListener
+//    @EventListener
     fun handleWebSocketCnnectionListener(event: SessionConnectedEvent) {
         logger.info("Recieved a new websocket connection")
     }
