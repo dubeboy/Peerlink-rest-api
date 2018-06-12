@@ -24,12 +24,12 @@ import za.co.dubedivine.networks.repository.TagRepository
 import za.co.dubedivine.networks.repository.UserRepository
 import za.co.dubedivine.networks.repository.VoteEntityBridgeRepository
 import za.co.dubedivine.networks.repository.elastic.ElasticTagRepo
+//import za.co.dubedivine.networks.services.AndroidPushNotificationService
 import za.co.dubedivine.networks.services.elastic.ElasticQuestionService
-import za.co.dubedivine.networks.services.notification.SendPushNotificationsService
 import za.co.dubedivine.networks.util.KUtils
 import java.util.*
 import za.co.dubedivine.networks.util.KUtils.saveQuestionOnElasticOnANewThread
-import za.co.dubedivine.networks.util.KUtils.sendPushNotifications
+//import za.co.dubedivine.networks.util.KUtils.sendPushNotifications
 
 //todo: handling invalid data an duplicate data
 //todo: split tags and questions
@@ -42,8 +42,8 @@ class QuestionsController(private val repository: QuestionRepository,
                           private val elasticTagRepo: ElasticTagRepo,
                           private val userRepository: UserRepository,
                           private val voteEntityBridgeRepo: VoteEntityBridgeRepository,
-                          private val mongoTemplate: MongoTemplate,
-                          private val notification: SendPushNotificationsService) {
+                          private val mongoTemplate: MongoTemplate
+                          /*private val androidPushNotifications: AndroidPushNotificationService*/) {
 
     private final val context = AnnotationConfigApplicationContext(AppConfig::class.java)
     // could just inject this
@@ -53,12 +53,23 @@ class QuestionsController(private val repository: QuestionRepository,
         @GetMapping
         get() {
             val sort = Sort(Sort.Direction.DESC, "createdAt")
+
             return repository.findAll(sort)
         }
 
+//    @GetMapping
+//    fun testPush(){
+//        println("sending fake notification")
+//        val sendPushNotifications = KUtils.sendPushNotifications(
+//                userRepository,
+//                androidPushNotifications,
+//                repository.findAll()[0])  //sends notification to the users
+//        println(sendPushNotifications)
+//    }
 
     @GetMapping("/{q_id}")
     fun getQuestion(@PathVariable("q_id") questionId: String): ResponseEntity<StatusResponseEntity<Question>> {
+
         val q = repository.findOne(questionId)
         return ResponseEntity(StatusResponseEntity(q != null,
                 if (q == null) "could not find question" else "", q), HttpStatus.CREATED)
@@ -100,7 +111,7 @@ class QuestionsController(private val repository: QuestionRepository,
             elasticQuestion.id = q.id
             elasticQuestion.user = user
             userRepository.save(user) // update the tags for this user
-            sendPushNotifications(userRepository, notification, q)  //sends notification to the users
+//            KUtils.sendPushNotifications(userRepository, androidPushNotifications, q)  //sends notification to the users
             elasticQuestionService.save(elasticQuestion)
             elasticTagRepo.save(elasticTagToSave)
         }
@@ -112,7 +123,6 @@ class QuestionsController(private val repository: QuestionRepository,
         return ResponseEntity(StatusResponseEntity(true,
                 "saved question", q), httpHeaders, HttpStatus.CREATED)
     }
-
 
 
     @PostMapping //for editing

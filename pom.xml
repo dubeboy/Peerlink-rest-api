@@ -27,6 +27,13 @@
 	</properties>
 
 	<dependencies>
+
+		<dependency>
+			<groupId>org.json</groupId>
+			<artifactId>json</artifactId>
+			<version>20160810</version>
+		</dependency>
+
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-websocket</artifactId>
@@ -85,6 +92,17 @@
 			<!--<artifactId>jna</artifactId>-->
 			<!--<scope>runtime</scope>-->
 		<!--</dependency>-->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-actuator</artifactId>
+		</dependency>
+
+		<dependency>
+			<groupId>com.google.firebase</groupId>
+			<artifactId>firebase-admin</artifactId>
+			<version>6.2.0</version>
+		</dependency>
+
 	</dependencies>
 
 	<build>
@@ -153,7 +171,7 @@
 				<executions>
 					<execution>
 						<id>compile</id>
-						<phase>compile</phase>
+						<phase>process-sources</phase>
 						<goals>
 							<goal>compile</goal>
 						</goals>
