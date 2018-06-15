@@ -10,8 +10,13 @@ import org.springframework.web.multipart.MultipartFile
 import za.co.dubedivine.networks.model.*
 import za.co.dubedivine.networks.model.responseEntity.StatusResponseEntity
 import za.co.dubedivine.networks.repository.QuestionRepository
+import za.co.dubedivine.networks.repository.TagRepository
+import za.co.dubedivine.networks.repository.UserRepository
 import za.co.dubedivine.networks.repository.VoteEntityBridgeRepository
+import za.co.dubedivine.networks.services.AndroidPushNotificationService
 import za.co.dubedivine.networks.services.elastic.ElasticQuestionService
+import za.co.dubedivine.networks.util.Data
+import za.co.dubedivine.networks.util.ENTITY_TYPE
 import za.co.dubedivine.networks.util.KUtils
 import za.co.dubedivine.networks.util.KUtils.createVoteEntity
 import java.util.ArrayList
@@ -22,13 +27,15 @@ class AnswersController(//operations that can be done on a Answers
         private val questionRepository: QuestionRepository,
         private val taskExecutor: ThreadPoolTaskExecutor,
         private val mongoTemplate: MongoTemplate,
+        private val tagRepository: TagRepository,
+        private val userRepository: UserRepository,
         private val voteEntityBridgeRepo: VoteEntityBridgeRepository,
-        private val elasticQuestionService: ElasticQuestionService) {
+        private val elasticQuestionService: ElasticQuestionService,
+        private val androidPushNotifications: AndroidPushNotificationService) {
 
     //todo: duplicates every time I save
     @PutMapping("/{q_id}/answer") // questions/1/answer
-    fun addAnswer(@PathVariable("q_id") questionId: String, @RequestBody answer: Answer):
-            ResponseEntity<StatusResponseEntity<Answer>> {   // could also take in the the whole question
+    fun addAnswer(@PathVariable("q_id") questionId: String, @RequestBody answer: Answer): ResponseEntity<StatusResponseEntity<Answer>> {   // could also take in the the whole question
         val question = questionRepository.findOne(questionId)
         println("the question $question and the id is ${question.id}")
         val statusResponseEntity: StatusResponseEntity<Answer>
@@ -41,6 +48,17 @@ class AnswersController(//operations that can be done on a Answers
                 elasticQuestionService.saveQuestionToElastic(question)
             })
             val savedOne = questionRepository.save(question)
+            KUtils.executeJobOnThread {
+                KUtils.getElasticTag(question, answer.user, tagRepository, userRepository)
+                val users = KUtils.retrieveUsersInThread(userRepository, question)
+                //notify users
+                for (usr in users) {
+                    KUtils.notifyUserInThread(androidPushNotifications,
+                            "CQ: ${question.title}",
+                            answer.body,
+                            usr.fcmToken, Data(question.id, ENTITY_TYPE.ANSWER, """{"answer_id": ${answer.id} }"""))
+                }
+            }
             println("after: the question $savedOne and the id is ${savedOne.id}")
             statusResponseEntity = StatusResponseEntity(true,
                     "Successfully added a new answer to this question",
@@ -76,6 +94,15 @@ class AnswersController(//operations that can be done on a Answers
                 if (answer.id == ans) {
                     if (vote) answer.votes = answer.votes + 1 else answer.votes = answer.votes - 1
                     questionRepository.save(question)
+                    KUtils.executeJobOnThread {
+                        val user = userRepository.findOne(userId)
+                        KUtils.getElasticTag(question, user, tagRepository, userRepository)
+                        //notify users
+                            KUtils.notifyUserInThread(androidPushNotifications,
+                                    "CQ: ${question.title}",
+                                    answer.body,
+                                    user.fcmToken, Data(question.id, ENTITY_TYPE.ANSWER_VOTE, """{"answer_id": ${answer.id} }"""))
+                    }
                     return ResponseEntity(StatusResponseEntity<Answer>(true,
                             "Vote ${if (vote) "added" else "removed"} ", null),
                             HttpStatus.OK)
@@ -85,8 +112,6 @@ class AnswersController(//operations that can be done on a Answers
                     "sorry we cannot find this answer that you want to vote on", null), HttpStatus.BAD_REQUEST)
         }
     }
-
-
 
     @PostMapping("/{q_id}/answer/{a_id}/comment")
     fun commentOnAnswer(@PathVariable("q_id") questionId: String,
@@ -102,15 +127,28 @@ class AnswersController(//operations that can be done on a Answers
                 if (answer.id == answerId) {
                     answer.comments.add(comment)
                     questionRepository.save(question)
+                    KUtils.executeJobOnThread {
+                        KUtils.getElasticTag(question, comment.user, tagRepository, userRepository)
+                        val users = KUtils.retrieveUsersInThread(userRepository, question)
+                        //notify users
+                        for (usr in users) {
+                            KUtils.notifyUserInThread(androidPushNotifications,
+                                    "AC: ${question.title}",
+                                    comment.body,
+                                    usr.fcmToken, Data(question.id, ENTITY_TYPE.ANSWER_COMMENT, """{"answer_id": ${answer.id} }"""))
+                        }
+                    }
                     return ResponseEntity(StatusResponseEntity(true,
                             "Comment added ", answer),
                             HttpStatus.OK)
                 }
+
             }
         return ResponseEntity(StatusResponseEntity<Answer>(false,
                 "no such answer found can be found", null), HttpStatus.BAD_REQUEST)
     }
 
+    //TODO needs some refactoring bro
     @PostMapping("/{q_id}/answer/{a_id}/files")
     fun addFiles(@PathVariable("q_id") questionId: String,
                  @PathVariable("a_id") answerId: String,
@@ -168,12 +206,12 @@ class AnswersController(//operations that can be done on a Answers
                     return ResponseEntity(StatusResponseEntity(true, "files created", question), HttpStatus.CREATED)
                 }
             } else {
-                return ResponseEntity(StatusResponseEntity<Question>(false,
+                return ResponseEntity(StatusResponseEntity(false,
                         "sorry could not add files because we could not find that question"), HttpStatus.NOT_FOUND)
             }
         } else {
             // todo look in
-            return ResponseEntity(StatusResponseEntity<Question>(false,
+            return ResponseEntity(StatusResponseEntity(false,
                     "sorry could not add files because we could not find that question"), HttpStatus.NOT_FOUND)
         }
     }

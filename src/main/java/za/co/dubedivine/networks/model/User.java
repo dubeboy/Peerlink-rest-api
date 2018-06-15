@@ -24,6 +24,7 @@ public class User {
     private Set<String> modules;
     @Indexed
     private List<Tag> tags = new ArrayList<>();
+    private String fcmToken;
 
     public void setTags(List<Tag> tags) {
         this.tags = tags;
@@ -94,5 +95,13 @@ public class User {
 
     public void addTag(Tag tag) {
         tags.add(tag);
+    }
+
+    public String getFcmToken() {
+        return fcmToken;
+    }
+
+    public void setFcmToken(String fcmToken) {
+        this.fcmToken = fcmToken;
     }
 }

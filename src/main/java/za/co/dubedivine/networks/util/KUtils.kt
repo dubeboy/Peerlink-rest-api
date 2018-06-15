@@ -1,7 +1,8 @@
 package za.co.dubedivine.networks.util
 
-import com.mongodb.BasicDBObject
 import com.mongodb.gridfs.GridFS
+import org.hibernate.validator.constraints.Range
+import org.json.JSONObject
 import org.springframework.context.annotation.AnnotationConfigApplicationContext
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.http.HttpEntity
@@ -12,16 +13,22 @@ import za.co.dubedivine.networks.config.AppConfig
 import za.co.dubedivine.networks.model.*
 import za.co.dubedivine.networks.model.elastic.ElasticTag
 import za.co.dubedivine.networks.model.responseEntity.StatusResponseEntity
+import za.co.dubedivine.networks.repository.TagRepository
 import za.co.dubedivine.networks.repository.UserRepository
 import za.co.dubedivine.networks.repository.VoteEntityBridgeRepository
+import za.co.dubedivine.networks.services.AndroidPushNotificationService
 //import za.co.dubedivine.networks.services.AndroidPushNotificationService
 import za.co.dubedivine.networks.services.elastic.ElasticQuestionService
 import java.util.concurrent.CompletableFuture
+import java.util.concurrent.ExecutionException
 import java.util.regex.Pattern
 
+
+//TODO object class can easily be a just a file with methods
 object KUtils {
 
-    private const val REGEX = "#(\\d*[A-Za-z_]+\\w*)\\b(?!;)"
+    private const val HASH_TAGS_REGEX = "#(\\d*[A-Za-z_]+\\w*)\\b(?!;)"
+    private const val TOPIC = "Peerlink"
 
     enum class CONTENT_TYPE {
         VID_IMG, DOC
@@ -42,10 +49,6 @@ object KUtils {
             else ->
                 false
         }
-    }
-
-    fun genDownloadUrlForFile(filename: String) {
-
     }
 
     fun <T> respond(status: Boolean, msg: String, obj: T): ResponseEntity<StatusResponseEntity<T>> {
@@ -73,7 +76,7 @@ object KUtils {
         return p.toRegex().containsMatchIn(text)
     }
 
-    private fun getPattern(): Pattern = Pattern.compile(KUtils.REGEX)
+    private fun getPattern(): Pattern = Pattern.compile(KUtils.HASH_TAGS_REGEX)
 
 
     // I think I was drunk here
@@ -90,11 +93,14 @@ object KUtils {
         elasticTag
     }
 
-    private fun getContext(): AnnotationConfigApplicationContext {
-        return AnnotationConfigApplicationContext(AppConfig::class.java)
-    }
+
 
     fun getThreadPoolExecutor(): ThreadPoolTaskExecutor {
+
+        fun getContext(): AnnotationConfigApplicationContext {
+            return AnnotationConfigApplicationContext(AppConfig::class.java)
+        }
+
         return getContext().getBean("taskExecutor") as ThreadPoolTaskExecutor
 
     }
@@ -154,22 +160,124 @@ object KUtils {
     }
 
 
-//    fun  sendPushNotifications(userRepository: UserRepository,
-//                              notification: Any? = null ,
-//                              question: Question,
-//                              answer: Answer? = null): CompletableFuture<String> {
-//
-//
-//        val userSet = HashSet<User>()
-//        for (tag in question.tags) {
-//            print("for this tag $tag")
-//            val users = userRepository.findAllByTag(tag.name)
-//            println(" found $users")
-//            userSet.addAll(users)
-//        }
-//        println(" and the user userSet $userSet")
-//       // val send = notification.send(HttpEntity("Hello"))
-//        return send
-//    }
+    fun retrieveUsersInThread(userRepository: UserRepository,
+                               question: Question): HashSet<User> {
 
+        val userSet = HashSet<User>()
+        for (tag in question.tags) {
+            print("for this tag $tag")
+            val users = userRepository.findAllByTag(tag.name)
+            println(" found $users")
+            userSet.addAll(users)
+        }
+        println(" and the user userSet $userSet")
+       return userSet
+    }
+
+    private fun createFCMBodyMessage(title: String, messagedBody: String, userFCMToken: String, dat: Data? = null): String {
+        val body = JSONObject()
+      //  body.put("to", "/topics/$TOPIC")
+        body.put("to", userFCMToken)
+        body.put("priority", "high")
+
+        val notification = JSONObject()
+        notification.put("title", title)
+        notification.put("body", messagedBody)
+
+        val data = JSONObject()
+        data.put("key-1", dat)
+
+        body.put("notification", notification)
+        body.put("data", data)
+
+        val jsonB = body.toString()
+        println("JSON=$jsonB")
+        return jsonB
+    }
+
+    fun notifyUserInThread(androidPushNotificationsService: AndroidPushNotificationService,
+                            title: String,
+                           messagedBody: String,
+                           userFCMToken: String,
+                           dat: Data? = null): Boolean {
+
+        val jsonB = createFCMBodyMessage(title.take(30), messagedBody.take(340), userFCMToken,  dat) //like a tweet
+        val request = HttpEntity(jsonB)
+
+        val pushNotification = androidPushNotificationsService.send(request)
+        CompletableFuture.allOf(pushNotification).join()
+        try {
+            val firebaseResponse = pushNotification.get()
+            println("firebase response is $firebaseResponse")
+            return firebaseResponse.contains("message_id")
+        } catch (e: InterruptedException) {
+            e.printStackTrace()
+        } catch (e: ExecutionException) {
+            e.printStackTrace()
+        }
+        return false
+    }
+
+    inline fun executeJobOnThread(crossinline job: () -> Unit) {
+        getThreadPoolExecutor().execute({
+            job()
+        })
+    }
+
+    //NB caution this function is misleading read carefully
+    // it also assigns user to
+    fun getElasticTag(question: Question,
+                              user: User,
+                              tagRepository: TagRepository,
+                              userRepository: UserRepository): ElasticTag? {
+        var elasticTag: ElasticTag? = null
+
+        question.tags.forEach {
+            //check if the tag exists if not its equal to null
+            val tag = tagRepository.findFirstByName(it.name)
+            //todo: bad bro
+            elasticTag = if (tag != null) {
+                // this means that the tag has already been created
+                //we don`t have to do anything more here all we have to do is
+                val foundTag = tagRepository.findFirstByName(it.name)
+                if (question !in foundTag.questions) {
+                    foundTag.addQuestion(question)
+                }
+                // val savedTag = tagRepository.save(foundTag)
+                // the tag exists but then the user might have it
+                //todo this is a slow OPERATION WE SHOULD DELEGATE THIS TO THE DB
+                if (!user.tags.contains(tag)) {
+                    user.addTag(foundTag) //todo this should replaced by a userTagBridge
+                }
+                KUtils.instantiateElasticTag(foundTag)
+            } else { // else create the tag
+                it.addQuestion(question)
+                val savedTag = tagRepository.save(it)
+                // the tag does not exit so the user definitely does not have it
+                user.addTag(savedTag)
+
+                KUtils.instantiateElasticTag(savedTag) // the last line returned!!s
+            }
+        }
+        //update the user as well
+        userRepository.save(user)
+        return elasticTag
+    }
 }
+
+enum class ENTITY_TYPE() {
+    QUESTION, ANSWER, QUESTION_COMMENT, ANSWER_COMMENT, QUESTION_VOTE, ANSWER_VOTE
+}
+
+data class Data(private val itemId: String, private val entity_TYPE: ENTITY_TYPE,  private val msg: String? = null) {
+    override fun toString(): String {
+        val j = JSONObject()
+
+        j.put("itemId", itemId)
+        j.put("entity", entity_TYPE)
+        j.put("msg", msg)
+
+        return j.toString()
+    }
+}
+

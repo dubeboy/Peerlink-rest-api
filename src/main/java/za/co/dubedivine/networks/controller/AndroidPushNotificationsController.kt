@@ -51,13 +51,13 @@ class AndroidPushNotificationsController(private val androidPushNotificationsSer
 
         val jsonB = body.toString()
         println("JSON=$jsonB")
-        val request = HttpEntity(jsonB);
+        val request = HttpEntity(jsonB)
 
-        val pushNotification = androidPushNotificationsService.send(request);
-        CompletableFuture.allOf(pushNotification).join();
+        val pushNotification = androidPushNotificationsService.send(request)
+        CompletableFuture.allOf(pushNotification).join()
 
         try {
-            val firebaseResponse = pushNotification.get();
+            val firebaseResponse = pushNotification.get()
 
             return ResponseEntity(firebaseResponse, HttpStatus.OK)
         } catch (e: InterruptedException) {
@@ -65,7 +65,6 @@ class AndroidPushNotificationsController(private val androidPushNotificationsSer
         } catch (e: ExecutionException) {
             e.printStackTrace()
         }
-
         return ResponseEntity("Push Notification ERROR!", HttpStatus.BAD_REQUEST);
     }
 

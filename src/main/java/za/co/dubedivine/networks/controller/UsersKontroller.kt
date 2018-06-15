@@ -49,7 +49,17 @@ class UsersKontroller(private val userRepository: UserRepository,
         return KUtils.respond(true, "", user.tags)
     }
 
-    fun changeDegree(degree: String): String {
+    //this function is used to update the fcm token everytime the fcm token changes on the phone which can happen
+    // at any time
+    @PostMapping("update_fcm_token/{token}")
+    fun updateFCMToken(@RequestBody user: User, @PathVariable("token") fcmToken: String):
+                                                                ResponseEntity<StatusResponseEntity<Boolean>> {
+        user.fcmToken = fcmToken
+        userRepository.save(user)
+        return KUtils.respond(true, "Updated FCM token", true)
+    }
+
+    private fun changeDegree(degree: String): String {
         return degree.trim().replace(" ", "_")
     }
 }

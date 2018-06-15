@@ -8,18 +8,11 @@ import org.springframework.stereotype.Service
 import org.springframework.web.client.RestTemplate
 import za.co.dubedivine.networks.interceptor.ClientRequestInterceptor
 import java.util.concurrent.CompletableFuture
-import java.nio.charset.StandardCharsets
 import java.util.*
 
 
 @Service
 class AndroidPushNotificationService {
-
-    //@Value("\${za.co.dubedivine.fcm-server-key}")
-    private val FCM_SERVER_KEY: String = "AAAAzJ91pxI:APA91bEvgCD_DOX61BuSK0gAESGSgRWK38x3MvrAFgMiAiAxMgbOBjalM0_Hy_l9AVqb1RxCK4d0GgnrlQgj4EDjgU6f0TjX22XYl_Fcw8MfK_Xo4hpzHRVRCbN7jv_e6YC5GZ833III"
-//    @Value("\${za.co.dubedivine.firebase-api-url}")
-    private val FIRE_BASE_API_URL: String = "https://fcm.googleapis.com/fcm/send"
-
 
     @Async
     fun send(entity: HttpEntity<String>): CompletableFuture<String> {
@@ -44,5 +37,12 @@ class AndroidPushNotificationService {
         interceptors.add(ClientRequestInterceptor("Authorization", "key=$FCM_SERVER_KEY"))
         interceptors.add(ClientRequestInterceptor("Content-Type", "application/json"))
         return interceptors
+    }
+
+    companion object {
+        private const val FCM_SERVER_KEY: String =
+                "AAAAzJ91pxI:APA91bEvgCD_DOX61BuSK0gAESGSgRWK38x3MvrAFgMiAiAxMgbOBjalM0_Hy_l9AVqb1RxCK4d0GgnrlQgj4EDjgU6f0TjX22XYl_Fcw8MfK_Xo4hpzHRVRCbN7jv_e6YC5GZ833III"
+
+        private const val FIRE_BASE_API_URL: String = "https://fcm.googleapis.com/fcm/send"
     }
 }

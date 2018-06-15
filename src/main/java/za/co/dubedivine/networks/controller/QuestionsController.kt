@@ -17,19 +17,22 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder
 import za.co.dubedivine.networks.config.AppConfig
 import za.co.dubedivine.networks.model.*
 import za.co.dubedivine.networks.model.elastic.ElasticQuestion
-import za.co.dubedivine.networks.model.elastic.ElasticTag
 import za.co.dubedivine.networks.model.responseEntity.StatusResponseEntity
 import za.co.dubedivine.networks.repository.QuestionRepository
 import za.co.dubedivine.networks.repository.TagRepository
 import za.co.dubedivine.networks.repository.UserRepository
 import za.co.dubedivine.networks.repository.VoteEntityBridgeRepository
 import za.co.dubedivine.networks.repository.elastic.ElasticTagRepo
+import za.co.dubedivine.networks.services.AndroidPushNotificationService
 //import za.co.dubedivine.networks.services.AndroidPushNotificationService
 import za.co.dubedivine.networks.services.elastic.ElasticQuestionService
+import za.co.dubedivine.networks.util.Data
+import za.co.dubedivine.networks.util.ENTITY_TYPE
 import za.co.dubedivine.networks.util.KUtils
 import java.util.*
 import za.co.dubedivine.networks.util.KUtils.saveQuestionOnElasticOnANewThread
-//import za.co.dubedivine.networks.util.KUtils.sendPushNotifications
+
+//import za.co.dubedivine.networks.util.KUtils.retrieveUsersInThread
 
 //todo: handling invalid data an duplicate data
 //todo: split tags and questions
@@ -42,8 +45,8 @@ class QuestionsController(private val repository: QuestionRepository,
                           private val elasticTagRepo: ElasticTagRepo,
                           private val userRepository: UserRepository,
                           private val voteEntityBridgeRepo: VoteEntityBridgeRepository,
-                          private val mongoTemplate: MongoTemplate
-                          /*private val androidPushNotifications: AndroidPushNotificationService*/) {
+                          private val mongoTemplate: MongoTemplate,
+                          private val androidPushNotifications: AndroidPushNotificationService) {
 
     private final val context = AnnotationConfigApplicationContext(AppConfig::class.java)
     // could just inject this
@@ -53,19 +56,8 @@ class QuestionsController(private val repository: QuestionRepository,
         @GetMapping
         get() {
             val sort = Sort(Sort.Direction.DESC, "createdAt")
-
             return repository.findAll(sort)
         }
-
-//    @GetMapping
-//    fun testPush(){
-//        println("sending fake notification")
-//        val sendPushNotifications = KUtils.sendPushNotifications(
-//                userRepository,
-//                androidPushNotifications,
-//                repository.findAll()[0])  //sends notification to the users
-//        println(sendPushNotifications)
-//    }
 
     @GetMapping("/{q_id}")
     fun getQuestion(@PathVariable("q_id") questionId: String): ResponseEntity<StatusResponseEntity<Question>> {
@@ -78,31 +70,9 @@ class QuestionsController(private val repository: QuestionRepository,
     //needs a major refactoring
     @PutMapping //adding anew entity
     fun addQuestion(@RequestBody question: Question): ResponseEntity<StatusResponseEntity<Question>> {
-        var elasticTagToSave: ElasticTag? = null
         val user = userRepository.findOne(question.user.id)
-
-        question.tags.forEach {
-            val tag = tagRepository.findFirstByName(it.name)
-            //todo: bad bro
-            elasticTagToSave = if (tag != null) {
-                // this means that the tag has already been created
-                //we don`t have to do anything more here all we have to do is
-                val foundTag = tagRepository.findFirstByName(it.name)
-                foundTag.addQuestion(question)
-                //       val savedTag = tagRepository.save(foundTag)
-                // the tag exists but then the user might have it
-                if (!user.tags.contains(tag)) {
-                    user.addTag(foundTag) //todo this should replaced by a userTagBridge
-                }
-                KUtils.instantiateElasticTag(foundTag)
-            } else { // else create the tag
-                val savedTag = tagRepository.save(it)
-                // the tag does not exit so the user definitely  does not have it
-                user.addTag(savedTag)
-                KUtils.instantiateElasticTag(savedTag) // the last line returned!!s
-            }
-        }
-
+        //giving the user a tag a and also instantiating an elastic that tag
+        val elasticTagToSave = KUtils.getElasticTag(question, user, tagRepository, userRepository)
         question.user = user
         val q = repository.insert(question)
         taskExecutor.execute {
@@ -111,9 +81,17 @@ class QuestionsController(private val repository: QuestionRepository,
             elasticQuestion.id = q.id
             elasticQuestion.user = user
             userRepository.save(user) // update the tags for this user
-//            KUtils.sendPushNotifications(userRepository, androidPushNotifications, q)  //sends notification to the users
+            //sends notification to the users
             elasticQuestionService.save(elasticQuestion)
             elasticTagRepo.save(elasticTagToSave)
+            val users = KUtils.retrieveUsersInThread(userRepository, q)
+            for (usr in users) {
+                KUtils.notifyUserInThread(androidPushNotifications,
+                        "Q: ${question.title}",
+                        question.body,
+                        usr.fcmToken,
+                        Data(question.id, ENTITY_TYPE.QUESTION))
+            }
         }
 
         val uri = ServletUriComponentsBuilder.fromCurrentRequest().path("/{id}").buildAndExpand(question.id).toUri()
@@ -213,9 +191,10 @@ class QuestionsController(private val repository: QuestionRepository,
     }
 
     //todo:use elastic search please link is here https://www.mkyong.com/spring-boot/spring-boot-spring-data-elasticsearch-example/
-//the search feature you can search by tag #hello or (question name) or just question
-//todo: should have a go deeper flag signifying that maybe we should also search in the answers as well
-//todo: http://ufasoli.blogspot.co.za/2013/08/mongodb-spring-data-elemmatch-in-field.html
+    //the search feature you can search by tag #hello or (question name) or just question
+    //todo: should have a go deeper flag signifying that maybe we should also search in the answers as well
+    //todo: http://ufasoli.blogspot.co.za/2013/08/mongodb-spring-data-elemmatch-in-field.html
+
     @GetMapping("/search") // elastic search
     fun search(@RequestParam("text") searchText: String): Set<ElasticQuestion> {
         println("the search term is $searchText")
@@ -251,11 +230,24 @@ class QuestionsController(private val repository: QuestionRepository,
                           @RequestBody comment: Comment): ResponseEntity<StatusResponseEntity<Answer>> {
         val question = repository.findOne(questionId)
         // todo: what happens if we cannot find the question!!!, it will crash and return a very hepfull spring msg
-        comment.user = userRepository.findOne(comment.user.id)
+        val user = userRepository.findOne(comment.user.id)
+        comment.user = user
         val comments = question.comments
         comments.add(comment)
-
         repository.save(question)
+
+        KUtils.executeJobOnThread {
+            KUtils.getElasticTag(question, user, tagRepository, userRepository)
+            val users = KUtils.retrieveUsersInThread(userRepository, question)
+            //notify users
+            for (usr in users) {
+                KUtils.notifyUserInThread(androidPushNotifications,
+                        "CQ: ${question.title}",
+                        comment.body,
+                        usr.fcmToken, Data(question.id, ENTITY_TYPE.QUESTION_COMMENT))
+            }
+        }
+
         return ResponseEntity(StatusResponseEntity<Answer>(true,
                 "Comment added on question", null),
                 HttpStatus.OK)
@@ -267,12 +259,14 @@ class QuestionsController(private val repository: QuestionRepository,
                      @RequestParam("user_id") userId: String): ResponseEntity<StatusResponseEntity<Answer>> { // <answer??> any ways its null
         val voted =
                 try {
-                    val voteDirection: Boolean = voteEntityBridgeRepo.findOne(Pair(questionId, userId)).isVoteTheSameDirection == vote
+                    val voteDirection =
+                            voteEntityBridgeRepo.findOne(Pair(questionId, userId)).isVoteTheSameDirection == vote
                     voteEntityBridgeRepo.exists(Pair(questionId, userId)) && voteDirection
                 } catch (npe: NullPointerException) {
                     false
                 }
         return when {
+        //if the user has already voted
             voted -> ResponseEntity(StatusResponseEntity<Answer>(false,
                     "No vote casted mate", null),
                     HttpStatus.OK)
@@ -281,11 +275,21 @@ class QuestionsController(private val repository: QuestionRepository,
                 val question = repository.findOne(questionId)
                 if (vote) question.votes = question.votes + 1 else question.votes = question.votes - 1
                 repository.save(question)
+
+                // send this task to a thread
+                KUtils.executeJobOnThread {
+                    KUtils.getElasticTag(question, userRepository.findOne(userId), tagRepository, userRepository)
+                    KUtils.notifyUserInThread(androidPushNotifications,
+                            "Q: ${question.title}",
+                            question.body,
+                            question.user.fcmToken, // notify the the owner of the question
+                            Data(question.id, ENTITY_TYPE.QUESTION_VOTE))
+                }
+
                 ResponseEntity(StatusResponseEntity<Answer>(true,
                         "Vote ${if (vote) "added" else "removed"} ", null),
                         HttpStatus.OK)
             }
         }
-
     }
 }
