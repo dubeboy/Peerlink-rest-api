@@ -35,7 +35,8 @@ class AnswersController(//operations that can be done on a Answers
 
     //todo: duplicates every time I save
     @PutMapping("/{q_id}/answer") // questions/1/answer
-    fun addAnswer(@PathVariable("q_id") questionId: String, @RequestBody answer: Answer): ResponseEntity<StatusResponseEntity<Answer>> {   // could also take in the the whole question
+    fun addAnswer(@PathVariable("q_id") questionId: String, @RequestBody answer: Answer):
+            ResponseEntity<StatusResponseEntity<Answer>> {   // could also take in the the whole question
         val question = questionRepository.findOne(questionId)
         println("the question $question and the id is ${question.id}")
         val statusResponseEntity: StatusResponseEntity<Answer>
