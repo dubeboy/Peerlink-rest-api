@@ -32,8 +32,6 @@ import za.co.dubedivine.networks.util.KUtils
 import java.util.*
 import za.co.dubedivine.networks.util.KUtils.saveQuestionOnElasticOnANewThread
 
-//import za.co.dubedivine.networks.util.KUtils.retrieveUsersInThread
-
 //todo: handling invalid data an duplicate data
 //todo: split tags and questions
 // todo: make pageable offset etc
@@ -90,7 +88,7 @@ class QuestionsController(private val repository: QuestionRepository,
                 println("trying executing coolness")
                 for (usr in users) {
                     KUtils.notifyUser(androidPushNotifications,
-                            q.title,
+                            "Q: ${q.title}",
                             q.body,
                             usr.fcmToken,
                             Data(q.id, ENTITY_TYPE.QUESTION))
@@ -251,7 +249,7 @@ class QuestionsController(private val repository: QuestionRepository,
             for (usr in users) {
                 println("looping at user $usr")
                 KUtils.notifyUser(androidPushNotifications,
-                        "CQ: ${question.title}",
+                        "New comment. Q: ${question.title}",
                         comment.body,
                         usr.fcmToken, Data(question.id, ENTITY_TYPE.QUESTION_COMMENT))
             }
@@ -286,14 +284,14 @@ class QuestionsController(private val repository: QuestionRepository,
 
                 // send this task to a thread
                 KUtils.executeJobOnThread {
-                    KUtils.getElasticTag(question, userRepository.findOne(userId), tagRepository, userRepository)
+                    val votingUser = userRepository.findOne(userId)
+                    KUtils.getElasticTag(question, votingUser, tagRepository, userRepository)
                     KUtils.notifyUser(androidPushNotifications,
-                            "Q: ${question.title}",
-                            question.body,
-                            question.user.fcmToken, // notify the the owner of the question
+                            "${votingUser.nickname} ${if(vote) "up" else "down"} voted a question you asked",
+                            question.title,
+                            userRepository.findOne(question.user.id).fcmToken, // notify the the owner of the question
                             Data(question.id, ENTITY_TYPE.QUESTION_VOTE))
                 }
-
                 ResponseEntity(StatusResponseEntity<Answer>(true,
                         "Vote ${if (vote) "added" else "removed"} ", null),
                         HttpStatus.OK)

@@ -51,10 +51,13 @@ class AnswersController(//operations that can be done on a Answers
             KUtils.executeJobOnThread {
                 KUtils.getElasticTag(question, answer.user, tagRepository, userRepository)
                 val users = KUtils.retrieveUsersInThread(userRepository, question)
+                val answerOwnerUser = userRepository.findOne(answer.user.id)
+                val added = users.add(answerOwnerUser)
+                println("the user was not in the list $added")
                 //notify users
                 for (usr in users) {
                     KUtils.notifyUser(androidPushNotifications,
-                            "CQ: ${question.title}",
+                            "New answer. Q: ${question.title}",
                             answer.body,
                             usr.fcmToken, Data(question.id, ENTITY_TYPE.ANSWER, """{"answer_id": ${answer.id} }"""))
                 }
@@ -95,13 +98,14 @@ class AnswersController(//operations that can be done on a Answers
                     if (vote) answer.votes = answer.votes + 1 else answer.votes = answer.votes - 1
                     questionRepository.save(question)
                     KUtils.executeJobOnThread {
-                        val user = userRepository.findOne(userId)
-                        KUtils.getElasticTag(question, user, tagRepository, userRepository)
+                        val votingUser = userRepository.findOne(userId)
+                        KUtils.getElasticTag(question, votingUser, tagRepository, userRepository)
+                        val answerOwnerUser = userRepository.findOne(answer.user.id)
                         //notify users
                             KUtils.notifyUser(androidPushNotifications,
-                                    "CQ: ${question.title}",
+                                    "${votingUser.nickname} ${if (vote) "up" else "down"} voted your answer",
                                     answer.body,
-                                    user.fcmToken, Data(question.id, ENTITY_TYPE.ANSWER_VOTE, """{"answer_id": ${answer.id} }"""))
+                                    answerOwnerUser.fcmToken, Data(question.id, ENTITY_TYPE.ANSWER_VOTE, """{"answer_id": ${answer.id} }"""))
                     }
                     return ResponseEntity(StatusResponseEntity<Answer>(true,
                             "Vote ${if (vote) "added" else "removed"} ", null),
@@ -130,10 +134,14 @@ class AnswersController(//operations that can be done on a Answers
                     KUtils.executeJobOnThread {
                         KUtils.getElasticTag(question, comment.user, tagRepository, userRepository)
                         val users = KUtils.retrieveUsersInThread(userRepository, question)
+                        val answerOwnerUser = userRepository.findOne(answer.user.id)
+                        val commentingUser = userRepository.findOne(comment.user.id)
+                        val exists = users.add(answerOwnerUser)
+                        println("owner of comment in thread $exists")
                         //notify users
                         for (usr in users) {
                             KUtils.notifyUser(androidPushNotifications,
-                                    "AC: ${question.title}",
+                                    "${commentingUser.nickname} commented on answer",
                                     comment.body,
                                     usr.fcmToken, Data(question.id, ENTITY_TYPE.ANSWER_COMMENT, """{"answer_id": ${answer.id} }"""))
                         }
