@@ -4,7 +4,6 @@ import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor
-import org.springframework.util.MimeType
 import org.springframework.web.bind.annotation.*
 import org.springframework.web.multipart.MultipartFile
 import za.co.dubedivine.networks.model.*
@@ -54,7 +53,7 @@ class AnswersController(//operations that can be done on a Answers
                 val users = KUtils.retrieveUsersInThread(userRepository, question)
                 //notify users
                 for (usr in users) {
-                    KUtils.notifyUserInThread(androidPushNotifications,
+                    KUtils.notifyUser(androidPushNotifications,
                             "CQ: ${question.title}",
                             answer.body,
                             usr.fcmToken, Data(question.id, ENTITY_TYPE.ANSWER, """{"answer_id": ${answer.id} }"""))
@@ -99,7 +98,7 @@ class AnswersController(//operations that can be done on a Answers
                         val user = userRepository.findOne(userId)
                         KUtils.getElasticTag(question, user, tagRepository, userRepository)
                         //notify users
-                            KUtils.notifyUserInThread(androidPushNotifications,
+                            KUtils.notifyUser(androidPushNotifications,
                                     "CQ: ${question.title}",
                                     answer.body,
                                     user.fcmToken, Data(question.id, ENTITY_TYPE.ANSWER_VOTE, """{"answer_id": ${answer.id} }"""))
@@ -133,7 +132,7 @@ class AnswersController(//operations that can be done on a Answers
                         val users = KUtils.retrieveUsersInThread(userRepository, question)
                         //notify users
                         for (usr in users) {
-                            KUtils.notifyUserInThread(androidPushNotifications,
+                            KUtils.notifyUser(androidPushNotifications,
                                     "AC: ${question.title}",
                                     comment.body,
                                     usr.fcmToken, Data(question.id, ENTITY_TYPE.ANSWER_COMMENT, """{"answer_id": ${answer.id} }"""))

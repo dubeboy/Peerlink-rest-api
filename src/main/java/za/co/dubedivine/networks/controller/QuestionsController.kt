@@ -72,27 +72,31 @@ class QuestionsController(private val repository: QuestionRepository,
     fun addQuestion(@RequestBody question: Question): ResponseEntity<StatusResponseEntity<Question>> {
         val user = userRepository.findOne(question.user.id)
         //giving the user a tag a and also instantiating an elastic that tag
-        val elasticTagToSave = KUtils.getElasticTag(question, user, tagRepository, userRepository)
         question.user = user
         val q = repository.insert(question)
-        taskExecutor.execute {
-            //should stop auto enable mongo and then i can create a mongo template
-            val elasticQuestion = ElasticQuestion(q.title, q.body, q.votes, q.tags, q.type)
-            elasticQuestion.id = q.id
-            elasticQuestion.user = user
-            userRepository.save(user) // update the tags for this user
-            //sends notification to the users
-            elasticQuestionService.save(elasticQuestion)
-            elasticTagRepo.save(elasticTagToSave)
-            val users = KUtils.retrieveUsersInThread(userRepository, q)
-            for (usr in users) {
-                KUtils.notifyUserInThread(androidPushNotifications,
-                        "Q: ${question.title}",
-                        question.body,
-                        usr.fcmToken,
-                        Data(question.id, ENTITY_TYPE.QUESTION))
+        val elasticTagToSave = KUtils.getElasticTag(q, user, tagRepository, userRepository)
+
+        taskExecutor.execute(object : Runnable {
+            override fun run() {
+                //should stop auto enable mongo and then i can create a mongo template
+                val elasticQuestion = ElasticQuestion(q.title, q.body, q.votes, q.tags, q.type)
+                elasticQuestion.id = q.id
+                elasticQuestion.user = user
+             //   userRepository.save(user) // update the tags for this user
+                //sends notification to the users
+                elasticQuestionService.save(elasticQuestion)
+                elasticTagRepo.save(elasticTagToSave)
+                val users = KUtils.retrieveUsersInThread(userRepository, q)
+                println("trying executing coolness")
+                for (usr in users) {
+                    KUtils.notifyUser(androidPushNotifications,
+                            q.title,
+                            q.body,
+                            usr.fcmToken,
+                            Data(q.id, ENTITY_TYPE.QUESTION))
+                }
             }
-        }
+        })
 
         val uri = ServletUriComponentsBuilder.fromCurrentRequest().path("/{id}").buildAndExpand(question.id).toUri()
         val httpHeaders = HttpHeaders()
@@ -199,10 +203,12 @@ class QuestionsController(private val repository: QuestionRepository,
     fun search(@RequestParam("text") searchText: String): Set<ElasticQuestion> {
         println("the search term is $searchText")
         if (!KUtils.hasTags(searchText)) {
-            println("in 1st phase bro")
-            return elasticQuestionService.search(searchText).toSet()
+            println("in 1st phase ")
+            val result = elasticQuestionService.search(searchText).toSet()
+            println("the returned result is $result")
+            return result
         } else {
-            println("in second phase bro")
+            println("in 2nd phase")
             val (purifiedTitle, tags) = KUtils.getCleanTextAndTags(searchText)
             val list: MutableList<ElasticQuestion> = mutableListOf()
             println("the purified text is $purifiedTitle")
@@ -213,7 +219,9 @@ class QuestionsController(private val repository: QuestionRepository,
                 println("the list is $elasticQuestions")
                 list.addAll(elasticQuestions)
             }
-            return list.toSet()
+            val set = list.toSet()
+            println("the returned result is $set")
+            return set
         }
     }
 
@@ -241,7 +249,8 @@ class QuestionsController(private val repository: QuestionRepository,
             val users = KUtils.retrieveUsersInThread(userRepository, question)
             //notify users
             for (usr in users) {
-                KUtils.notifyUserInThread(androidPushNotifications,
+                println("looping at user $usr")
+                KUtils.notifyUser(androidPushNotifications,
                         "CQ: ${question.title}",
                         comment.body,
                         usr.fcmToken, Data(question.id, ENTITY_TYPE.QUESTION_COMMENT))
@@ -257,14 +266,13 @@ class QuestionsController(private val repository: QuestionRepository,
     fun voteQuestion(@PathVariable("q_id") questionId: String,
                      @RequestParam("vote") vote: Boolean,
                      @RequestParam("user_id") userId: String): ResponseEntity<StatusResponseEntity<Answer>> { // <answer??> any ways its null
-        val voted =
-                try {
-                    val voteDirection =
-                            voteEntityBridgeRepo.findOne(Pair(questionId, userId)).isVoteTheSameDirection == vote
-                    voteEntityBridgeRepo.exists(Pair(questionId, userId)) && voteDirection
-                } catch (npe: NullPointerException) {
-                    false
-                }
+
+        val voted = try {
+            val voteDirection = voteEntityBridgeRepo.findOne(Pair(questionId, userId)).isVoteTheSameDirection == vote
+            voteEntityBridgeRepo.exists(Pair(questionId, userId)) && voteDirection
+        } catch (npe: NullPointerException) {
+            false
+        }
         return when {
         //if the user has already voted
             voted -> ResponseEntity(StatusResponseEntity<Answer>(false,
@@ -279,7 +287,7 @@ class QuestionsController(private val repository: QuestionRepository,
                 // send this task to a thread
                 KUtils.executeJobOnThread {
                     KUtils.getElasticTag(question, userRepository.findOne(userId), tagRepository, userRepository)
-                    KUtils.notifyUserInThread(androidPushNotifications,
+                    KUtils.notifyUser(androidPushNotifications,
                             "Q: ${question.title}",
                             question.body,
                             question.user.fcmToken, // notify the the owner of the question

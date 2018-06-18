@@ -1,7 +1,6 @@
 package za.co.dubedivine.networks.util
 
 import com.mongodb.gridfs.GridFS
-import org.hibernate.validator.constraints.Range
 import org.json.JSONObject
 import org.springframework.context.annotation.AnnotationConfigApplicationContext
 import org.springframework.data.mongodb.core.MongoTemplate
@@ -195,13 +194,14 @@ object KUtils {
         return jsonB
     }
 
-    fun notifyUserInThread(androidPushNotificationsService: AndroidPushNotificationService,
-                            title: String,
-                           messagedBody: String,
-                           userFCMToken: String,
-                           dat: Data? = null): Boolean {
+    fun notifyUser(androidPushNotificationsService: AndroidPushNotificationService,
+                   title: String,
+                   messagedBody: String,
+                   userFCMToken: String,
+                   dat: Data? = null) {
+        println("sendig notifictions")
 
-        val jsonB = createFCMBodyMessage(title.take(30), messagedBody.take(340), userFCMToken,  dat) //like a tweet
+        val jsonB = createFCMBodyMessage(title.take(30), messagedBody.take(360), userFCMToken,  dat) //like a tweet
         val request = HttpEntity(jsonB)
 
         val pushNotification = androidPushNotificationsService.send(request)
@@ -209,17 +209,18 @@ object KUtils {
         try {
             val firebaseResponse = pushNotification.get()
             println("firebase response is $firebaseResponse")
-            return firebaseResponse.contains("message_id")
+        //    return firebaseResponse.contains("message_id")
         } catch (e: InterruptedException) {
             e.printStackTrace()
         } catch (e: ExecutionException) {
             e.printStackTrace()
         }
-        return false
+     //   return false
     }
 
     inline fun executeJobOnThread(crossinline job: () -> Unit) {
         getThreadPoolExecutor().execute({
+            println("putting job on thread")
             job()
         })
     }
@@ -227,12 +228,12 @@ object KUtils {
     //NB caution this function is misleading read carefully
     // it also assigns user to
     fun getElasticTag(question: Question,
-                              user: User,
-                              tagRepository: TagRepository,
-                              userRepository: UserRepository): ElasticTag? {
+                      user: User,
+                      tagRepository: TagRepository,
+                      userRepository: UserRepository): ElasticTag? {
         var elasticTag: ElasticTag? = null
 
-        question.tags.forEach {
+        for (it in question.tags) {
             //check if the tag exists if not its equal to null
             val tag = tagRepository.findFirstByName(it.name)
             //todo: bad bro
@@ -252,7 +253,7 @@ object KUtils {
                 KUtils.instantiateElasticTag(foundTag)
             } else { // else create the tag
                 it.addQuestion(question)
-                val savedTag = tagRepository.save(it)
+                val savedTag = tagRepository.save(Tag(it.name))
                 // the tag does not exit so the user definitely does not have it
                 user.addTag(savedTag)
 
@@ -260,7 +261,7 @@ object KUtils {
             }
         }
         //update the user as well
-        userRepository.save(user)
+        userRepository.save(userRepository.findOne(user.id))
         return elasticTag
     }
 }

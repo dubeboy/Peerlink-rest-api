@@ -54,8 +54,11 @@ class UsersKontroller(private val userRepository: UserRepository,
     @PostMapping("update_fcm_token/{token}")
     fun updateFCMToken(@RequestBody user: User, @PathVariable("token") fcmToken: String):
                                                                 ResponseEntity<StatusResponseEntity<Boolean>> {
-        user.fcmToken = fcmToken
-        userRepository.save(user)
+
+        println("updating user token $fcmToken")
+        val findOne = userRepository.findOne(user.id)
+        findOne.fcmToken = fcmToken
+        userRepository.save(findOne)
         return KUtils.respond(true, "Updated FCM token", true)
     }
 

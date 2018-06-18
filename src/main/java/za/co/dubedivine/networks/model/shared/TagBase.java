@@ -15,7 +15,7 @@ public abstract class TagBase {
     private String name;  // name is the ID means
     private Date createAt = new Date();
     @JsonIgnore
-    private List<Question> questions;
+    private List<Question> questions = new ArrayList<>();  // todo should be a set
 
     public TagBase(String name) {
         this.name = name;

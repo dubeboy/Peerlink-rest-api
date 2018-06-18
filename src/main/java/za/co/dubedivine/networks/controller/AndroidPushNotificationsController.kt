@@ -7,6 +7,7 @@ import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.stereotype.Controller
 import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 import za.co.dubedivine.networks.services.AndroidPushNotificationService
@@ -17,10 +18,10 @@ import java.util.concurrent.ExecutionException
 @RequestMapping("notifications")
 class AndroidPushNotificationsController(private val androidPushNotificationsService: AndroidPushNotificationService) {
 
-    @GetMapping("/send")
-    private fun send(): ResponseEntity<String> {
+    @GetMapping("/send/{token}")
+    private fun send(@PathVariable("token") token: String): ResponseEntity<String> {
         val body = JSONObject()
-        body.put("to", "/topics/$TOPIC")
+        body.put("to", token)
         body.put("priority", "high")
 
         val notification = JSONObject()
@@ -65,7 +66,7 @@ class AndroidPushNotificationsController(private val androidPushNotificationsSer
         } catch (e: ExecutionException) {
             e.printStackTrace()
         }
-        return ResponseEntity("Push Notification ERROR!", HttpStatus.BAD_REQUEST);
+        return ResponseEntity("Push Notification ERROR!", HttpStatus.BAD_REQUEST)
     }
 
     companion object {

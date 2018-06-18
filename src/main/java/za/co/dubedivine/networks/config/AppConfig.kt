@@ -12,8 +12,8 @@ class AppConfig {
     @Bean
     fun taskExecutor(): ThreadPoolTaskExecutor {
         val pool = ThreadPoolTaskExecutor()
-        pool.corePoolSize = 5
-        pool.maxPoolSize = 5
+        pool.corePoolSize = 3
+        pool.maxPoolSize = 3
         pool.setWaitForTasksToCompleteOnShutdown(true)
         return pool
     }
