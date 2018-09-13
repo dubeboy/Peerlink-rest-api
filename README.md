@@ -1,9 +1,6 @@
-# vigilant-eureka
+# Peerlink-REST-API
 
-warning... you are about to read true nonsense!
-
-this is a dope rest app  for the world!!!, sort of like stackover 
-flow but better in my head...,seriously...
+This is a Q&A Springboot REST server that simply allows students to ask questions from other students, they can ask questions using images, 1 min video and text they can also upload documents and discuss those documents  
 
 #
 its just QA rest app made using 
