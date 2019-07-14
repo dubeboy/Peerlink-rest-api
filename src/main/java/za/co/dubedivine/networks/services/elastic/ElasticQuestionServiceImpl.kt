@@ -1,5 +1,6 @@
 package za.co.dubedivine.networks.services.elastic
 
+import org.apache.lucene.search.join.ScoreMode
 import org.elasticsearch.common.unit.Fuzziness
 import org.elasticsearch.index.query.QueryBuilders
 import org.springframework.data.elasticsearch.core.ElasticsearchTemplate
@@ -61,7 +62,7 @@ class ElasticQuestionServiceImpl(private val elasticQRepo: ElasticQRepo,
                         .field("body")
                 )
                 .must(QueryBuilders.nestedQuery("tags",
-                        QueryBuilders.termQuery("tags.name", tagName))
+                        QueryBuilders.termQuery("tags.name", tagName), ScoreMode.Avg)
                 ) //todo: i should be able to query child elements
         val build = NativeSearchQueryBuilder().withQuery(queryBuilder).build()
         //elasticQRepo.findByTitleAndBodyAndTagsName(title, tagName);

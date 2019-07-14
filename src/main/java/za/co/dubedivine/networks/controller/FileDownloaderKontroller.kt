@@ -1,46 +1,46 @@
 package za.co.dubedivine.networks.controller
 
-import com.mongodb.BasicDBObject
-import com.mongodb.gridfs.GridFSDBFile
-import org.bson.types.ObjectId
+import com.mongodb.client.gridfs.model.GridFSFile
 import org.springframework.core.io.ByteArrayResource
-import org.springframework.data.mongodb.core.MongoTemplate
+import org.springframework.data.mongodb.core.query.Criteria.where
+import org.springframework.data.mongodb.core.query.Query.query
+import org.springframework.data.mongodb.gridfs.GridFsOperations
 import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
-import org.springframework.web.bind.annotation.*
-import za.co.dubedivine.networks.util.KUtils
-import java.io.*
+import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.PathVariable
+import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.RestController
+import java.io.ByteArrayOutputStream
 import java.io.IOException
+import java.io.InputStream
 
 
 @RestController
 @RequestMapping() // I would like to make the request look like its just getting a static resource
-class FileDownloaderKontroller(mongoTemplate: MongoTemplate) {
-
-    private val fsInstance = KUtils.getGridFs(mongoTemplate)
+class FileDownloaderKontroller(val gridFsOperations: GridFsOperations) {
     @GetMapping("/{id}")
     fun getFile(@PathVariable("id") id: String): ResponseEntity<ByteArrayResource> {
         try {
             println("the Id id $id")
-            val query = BasicDBObject()
-            query["_id"] = ObjectId(id)
-            val gridFSDBFile: GridFSDBFile? = fsInstance.findOne(query)
+            val gridFSFile: GridFSFile? = gridFsOperations.findOne(query(where("_id").`is`(id)))
 
-            if (gridFSDBFile != null && gridFSDBFile.length != 0L) {
+            if (gridFSFile != null && gridFSFile.length != 0L) {
 
-                val inputStream = BufferedInputStream(gridFSDBFile.inputStream)
+                val filename = gridFSFile.filename
+                val contentType = gridFSFile.contentType // todo : get it from mine
+
+                val inputStream = gridFsOperations.getResource(gridFSFile).inputStream
                 println("input stream available is ${inputStream.available()}")
                 val byteArray = getBytes(inputStream)
                 val byteArrayResource = ByteArrayResource(byteArray)
-                val contentType = gridFSDBFile.contentType
-                val filename = gridFSDBFile.filename
 
                 println("the content Type is $contentType and the file name is $filename")
-                println("the sizes ${byteArray.size} and the actual size from mongo is ${gridFSDBFile.length} ")
+                println("the sizes ${byteArray.size} and the actual size from mongo is ${gridFSFile.length} ")
 
                 val headers = HttpHeaders()
-                headers.set(HttpHeaders.CONTENT_TYPE, contentType);
+                headers.set(HttpHeaders.CONTENT_TYPE, contentType)
                 headers.set(HttpHeaders.CONTENT_DISPOSITION, """attachment; filename="$filename"""")
                 headers.set(HttpHeaders.CONTENT_LENGTH, byteArray.size.toString())
 

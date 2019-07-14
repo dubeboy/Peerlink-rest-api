@@ -3,7 +3,6 @@ package za.co.dubedivine.networks.repository;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.data.mongodb.repository.MongoRepository;
 import org.springframework.data.mongodb.repository.Query;
-import org.springframework.data.querydsl.QueryDslPredicateExecutor;
 import za.co.dubedivine.networks.model.Tag;
 import za.co.dubedivine.networks.model.User;
 

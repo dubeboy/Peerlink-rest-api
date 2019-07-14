@@ -1,5 +1,6 @@
 package za.co.dubedivine.networks.controller
 
+import org.springframework.data.repository.findByIdOrNull
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
@@ -15,7 +16,7 @@ import za.co.dubedivine.networks.util.KUtils
 class UsersKontroller(private val userRepository: UserRepository,
                       private val tagRepository: TagRepository) {
 
-    @PostMapping()
+    @PostMapping
     fun signIn(@RequestBody user: User): ResponseEntity<StatusResponseEntity<User>> {
         if (userRepository.existsByEmail(user.email)) {
             return ResponseEntity(StatusResponseEntity(true,
@@ -45,8 +46,11 @@ class UsersKontroller(private val userRepository: UserRepository,
     // the path does not conform to our standards
     @GetMapping("tags_subscribed/{u_id}")
     fun getTags(@PathVariable("u_id") userId: String): ResponseEntity<StatusResponseEntity<List<Tag>>> {
-        val user = userRepository.findOne(userId)
-        return KUtils.respond(true, "", user.tags)
+        val user = userRepository.findByIdOrNull(userId)
+        return if (user != null)
+            KUtils.respond(true, "", user.tags)
+        else
+            KUtils.respond(false, "Cannot get tags for this non existent USER", User().tags)
     }
 
     //this function is used to update the fcm token everytime the fcm token changes on the phone which can happen
@@ -54,12 +58,15 @@ class UsersKontroller(private val userRepository: UserRepository,
     @PostMapping("update_fcm_token/{token}")
     fun updateFCMToken(@RequestBody user: User, @PathVariable("token") fcmToken: String):
                                                                 ResponseEntity<StatusResponseEntity<Boolean>> {
-
         println("updating user token $fcmToken")
-        val findOne = userRepository.findOne(user.id)
-        findOne.fcmToken = fcmToken
-        userRepository.save(findOne)
-        return KUtils.respond(true, "Updated FCM token", true)
+        val findOne = userRepository.findByIdOrNull(user.id)
+        return if (findOne != null) {
+            findOne.fcmToken = fcmToken
+            userRepository.save(findOne)
+            KUtils.respond(true, "Updated FCM token", true)
+        } else {
+            KUtils.respond(false, "Sorry Could not update FCM token", false)
+        }
     }
 
     private fun changeDegree(degree: String): String {

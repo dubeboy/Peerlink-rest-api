@@ -1,6 +1,12 @@
 package za.co.dubedivine.networks.controller
 
+import com.mongodb.BasicDBObject
+import com.mongodb.DBObject
+import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.data.mongodb.core.MongoTemplate
+import org.springframework.data.mongodb.gridfs.GridFsOperations
+import org.springframework.data.repository.findByIdOrNull
+import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor
@@ -24,8 +30,9 @@ import java.util.ArrayList
 @RequestMapping("questions")
 class AnswersController(//operations that can be done on a Answers
         private val questionRepository: QuestionRepository,
-        private val taskExecutor: ThreadPoolTaskExecutor,
+        @Qualifier("taskExecutor") private val taskExecutor: ThreadPoolTaskExecutor,
         private val mongoTemplate: MongoTemplate,
+        private val mongoDBOprations: GridFsOperations,
         private val tagRepository: TagRepository,
         private val userRepository: UserRepository,
         private val voteEntityBridgeRepo: VoteEntityBridgeRepository,
@@ -36,30 +43,36 @@ class AnswersController(//operations that can be done on a Answers
     @PutMapping("/{q_id}/answer") // questions/1/answer
     fun addAnswer(@PathVariable("q_id") questionId: String, @RequestBody answer: Answer):
             ResponseEntity<StatusResponseEntity<Answer>> {   // could also take in the the whole question
-        val question = questionRepository.findOne(questionId)
-        println("the question $question and the id is ${question.id}")
+        val questionOptional = questionRepository.findById(questionId)
+        println("the question $questionOptional and the id is")
         val statusResponseEntity: StatusResponseEntity<Answer>
-        return if (question == null) {
+        return if (!questionOptional.isPresent) {
             statusResponseEntity = StatusResponseEntity(false, "the question you are trying to update does not exist")
             ResponseEntity(statusResponseEntity, HttpStatus.BAD_REQUEST) //return this
         } else {
+            val question = questionOptional.get()
             if (question.answers != null) question.answers.add(answer) else question.answers = arrayListOf(answer)
-            taskExecutor.execute({
+            taskExecutor.execute {
                 elasticQuestionService.saveQuestionToElastic(question)
-            })
+            }
             val savedOne = questionRepository.save(question)
             KUtils.executeJobOnThread {
                 KUtils.getElasticTag(question, answer.user, tagRepository, userRepository)
                 val users = KUtils.retrieveUsersInThread(userRepository, question)
-                val answerOwnerUser = userRepository.findOne(answer.user.id)
-                val added = users.add(answerOwnerUser)
-                println("the user was not in the list $added")
-                //notify users
-                for (usr in users) {
-                    KUtils.notifyUser(androidPushNotifications,
-                            "New answer. Q: ${question.title}",
-                            answer.body,
-                            usr.fcmToken, Data(question.id, ENTITY_TYPE.ANSWER, """{"answer_id": ${answer.id} }"""))
+                val answerOwnerUser = userRepository.findByIdOrNull(answer.user.id)
+                if (answerOwnerUser != null) {
+                    val added = users.add(answerOwnerUser)
+                    println("the user was not in the list $added")
+                    //notify users
+                    for (usr in users) {
+                        KUtils.notifyUser(androidPushNotifications,
+                                "New answer. Q: ${question.title}",
+                                answer.body,
+                                usr.fcmToken, Data(question.id, ENTITY_TYPE.ANSWER, """{"answer_id": ${answer.id} }"""))
+                    }
+                } else {
+                    // todo log to elasticsearch that some how the user was not found
+                    System.err.println("Answer Owner User is null")
                 }
             }
             println("after: the question $savedOne and the id is ${savedOne.id}")
@@ -76,13 +89,9 @@ class AnswersController(//operations that can be done on a Answers
                    @PathVariable("a_id") ans: String,
                    @RequestParam("vote") vote: Boolean,
                    @RequestParam("user_id") userId: String): ResponseEntity<StatusResponseEntity<Answer>> {
-        val voted =
-                try {
-                    val voteDirection: Boolean = voteEntityBridgeRepo.findOne(Pair(questionId, userId)).isVoteTheSameDirection == vote
-                    voteEntityBridgeRepo.exists(Pair(questionId, userId)) && voteDirection
-                } catch (npe: NullPointerException) {
-                    false
-                }
+
+        val voteDirection = voteEntityBridgeRepo.findByIdOrNull(Pair(questionId, userId))?.isVoteTheSameDirection == vote
+        val voted = voteEntityBridgeRepo.existsById(Pair(questionId, userId)) && voteDirection
 
         if (voted) {
             return ResponseEntity(StatusResponseEntity<Answer>(false,
@@ -91,27 +100,31 @@ class AnswersController(//operations that can be done on a Answers
         } else {
             createVoteEntity(voteEntityBridgeRepo, Pair(questionId, userId), vote)
             val answers: MutableList<Answer>
-            val question = questionRepository.findOne(questionId)
-            answers = question.answers
-            for (answer in answers) {
-                if (answer.id == ans) {
-                    if (vote) answer.votes = answer.votes + 1 else answer.votes = answer.votes - 1
-                    questionRepository.save(question)
-                    KUtils.executeJobOnThread {
-                        val votingUser = userRepository.findOne(userId)
-                        KUtils.getElasticTag(question, votingUser, tagRepository, userRepository)
-                        val answerOwnerUser = userRepository.findOne(answer.user.id)
-                        //notify users
-                            KUtils.notifyUser(androidPushNotifications,
-                                    "${votingUser.nickname} ${if (vote) "up" else "down"} voted your answer",
-                                    answer.body,
-                                    answerOwnerUser.fcmToken, Data(question.id, ENTITY_TYPE.ANSWER_VOTE, """{"answer_id": ${answer.id} }"""))
+            val question = questionRepository.findByIdOrNull(questionId)
+            if (question != null) {
+                answers = question.answers
+                for (answer in answers) {
+                    if (answer.id == ans) {
+                        if (vote) answer.votes = answer.votes + 1 else answer.votes = answer.votes - 1
+                        questionRepository.save(question)
+                        KUtils.executeJobOnThread {
+                            userRepository.findByIdOrNull(userId)?.let { votingUser ->
+                                KUtils.getElasticTag(question, votingUser, tagRepository, userRepository)
+                                userRepository.findByIdOrNull(answer.user.id)?.let { answerOwnerUser ->
+                                    KUtils.notifyUser(androidPushNotifications,
+                                            "${votingUser.nickname} ${if (vote) "up" else "down"} voted your answer",
+                                            answer.body,
+                                            answerOwnerUser.fcmToken, Data(question.id, ENTITY_TYPE.ANSWER_VOTE, """{"answer_id": ${answer.id} }"""))
+                                }
+                            }
+                        }
+                        return ResponseEntity(StatusResponseEntity<Answer>(true,
+                                "Vote ${if (vote) "added" else "removed"} ", null),
+                                HttpStatus.OK)
                     }
-                    return ResponseEntity(StatusResponseEntity<Answer>(true,
-                            "Vote ${if (vote) "added" else "removed"} ", null),
-                            HttpStatus.OK)
                 }
             }
+
             return ResponseEntity(StatusResponseEntity<Answer>(false,
                     "sorry we cannot find this answer that you want to vote on", null), HttpStatus.BAD_REQUEST)
         }
@@ -121,12 +134,13 @@ class AnswersController(//operations that can be done on a Answers
     fun commentOnAnswer(@PathVariable("q_id") questionId: String,
                         @PathVariable("a_id") answerId: String,
                         @RequestBody comment: Comment): ResponseEntity<StatusResponseEntity<Answer>> {
-        val question = questionRepository.findOne(questionId)
+        val question = questionRepository.findByIdOrNull(questionId)
         //TODO: Bad code use Criteria criteria = Criteria.where("mappings.provider.name").is(provider.getName());
-        val answers = question.answers
+
         if (question == null) return ResponseEntity(StatusResponseEntity<Answer>(false,
                 "no such question can be found", null), HttpStatus.BAD_REQUEST)
-        else
+        else {
+            val answers = question.answers
             for (answer in answers) {
                 if (answer.id == answerId) {
                     answer.comments.add(comment)
@@ -134,16 +148,18 @@ class AnswersController(//operations that can be done on a Answers
                     KUtils.executeJobOnThread {
                         KUtils.getElasticTag(question, comment.user, tagRepository, userRepository)
                         val users = KUtils.retrieveUsersInThread(userRepository, question)
-                        val answerOwnerUser = userRepository.findOne(answer.user.id)
-                        val commentingUser = userRepository.findOne(comment.user.id)
-                        val exists = users.add(answerOwnerUser)
-                        println("owner of comment in thread $exists")
-                        //notify users
-                        for (usr in users) {
-                            KUtils.notifyUser(androidPushNotifications,
-                                    "${commentingUser.nickname} commented on answer",
-                                    comment.body,
-                                    usr.fcmToken, Data(question.id, ENTITY_TYPE.ANSWER_COMMENT, """{"answer_id": ${answer.id} }"""))
+                        val answerOwnerUser = userRepository.findByIdOrNull(answer.user.id)
+                        val commentingUser = userRepository.findByIdOrNull(comment.user.id)
+                        if (answerOwnerUser != null && commentingUser != null) {
+                            val exists = users.add(answerOwnerUser)
+                            println("owner of comment in thread $exists")
+                            //notify users
+                            for (usr in users) {
+                                KUtils.notifyUser(androidPushNotifications,
+                                        "${commentingUser.nickname} commented on answer",
+                                        comment.body,
+                                        usr.fcmToken, Data(question.id, ENTITY_TYPE.ANSWER_COMMENT, """{"answer_id": ${answer.id} }"""))
+                            }
                         }
                     }
                     return ResponseEntity(StatusResponseEntity(true,
@@ -152,6 +168,7 @@ class AnswersController(//operations that can be done on a Answers
                 }
 
             }
+        }
         return ResponseEntity(StatusResponseEntity<Answer>(false,
                 "no such answer found can be found", null), HttpStatus.BAD_REQUEST)
     }
@@ -161,8 +178,8 @@ class AnswersController(//operations that can be done on a Answers
     fun addFiles(@PathVariable("q_id") questionId: String,
                  @PathVariable("a_id") answerId: String,
                  @RequestPart files: List<MultipartFile>): ResponseEntity<StatusResponseEntity<Question>> {
-        val question = questionRepository.findOne(questionId)
-        if ((question) != null) {
+        val question = questionRepository.findByIdOrNull(questionId)
+        if (question != null) {
             var answer: Answer? = null
 
             // look for the answer in the question using it ID and then
@@ -174,20 +191,19 @@ class AnswersController(//operations that can be done on a Answers
                 }
             }
 
+            val metaData = BasicDBObject()
+            metaData["questionId"] = questionId
             if (answer != null) {
-                val fs = KUtils.getGridFs(mongoTemplate)
-                println("the bucket name is:  ${fs.bucketName} and the db:  ${fs.db}")
-                if (files.size == 1 && KUtils.isFileAVideo(files[0].contentType)) {  //not the best way of checking, but i know the client will restrict this
-
-                    val createFile = fs.createFile(files[0].inputStream, files[0].originalFilename, true)
+//                println("the bucket name is:  ${fs.bucketName} and the db:  ${fs.db}")
+                if (files.size == 1 && KUtils.isFileAVideo(files[0].contentType)) {  //not the best way of checking,
+                                                                                    // but I know the client will restrict this should use mime type
                     val mime = KUtils.genMimeTypeForVideo(files[0].originalFilename)
-                    println("mime is: $mime")
-                    createFile.contentType = mime
-                    createFile.put("questionId", questionId.toString())
-                    createFile.save()
-                    println("the is of the file is: ${createFile.id}")
+                    metaData[HttpHeaders.CONTENT_TYPE] = mime
+                    val createFile = mongoDBOprations.store(files[0].inputStream, files[0].originalFilename, mime, metaData)
+                    println("mime/content type  is: $mime")
+                    println("the is of the file is: $createFile")
 
-                    answer.video = Media(files[0].originalFilename, createFile.length, Media.VIDEO_TYPE, createFile.id.toString())
+                    answer.video = Media(files[0].originalFilename, Media.VIDEO_TYPE, createFile.toString())
                     val savedQuestion = questionRepository.save(question)
                     println(savedQuestion)
                     KUtils.saveQuestionOnElasticOnANewThread(elasticQuestionService, taskExecutor, savedQuestion)
@@ -196,17 +212,15 @@ class AnswersController(//operations that can be done on a Answers
                 } else { // this application type is
                     val docs: ArrayList<Media> = arrayListOf()
                     files.forEach {
-                        val createFile = fs.createFile(it.inputStream, it.originalFilename, true)
+                        println("the mime is ${it.contentType}")
+                        metaData[HttpHeaders.CONTENT_TYPE] = it.contentType
+                        val createFile = mongoDBOprations.store(it.inputStream, it.originalFilename, it.contentType, metaData)
                         //need to change this to map to the proper mime
                      //   MimeType.valueOf()
-                        createFile.contentType = it.contentType
-                        createFile.put("questionId", questionId)
-                        createFile.save()
                         docs.add(Media(
                                 it.originalFilename,
-                                createFile.length,
-                                KUtils.genMediaTypeFromContentType(createFile.contentType),
-                                createFile.id.toString()))
+                                KUtils.genMediaTypeFromContentType(it.contentType),
+                                createFile.toString()))
                     }
                     answer.files = docs
                     val savedQuestion = questionRepository.save(question)

@@ -26,29 +26,12 @@ public class Media {
         return name;
     }
 
-    public long getSize() {
-        return size;
-    }
-
     public char getType() {
         return type;
     }
 
-    public String getLocation() {
-        return location;
-    }
-
-    public int getLimit() {
-        return 5120;
-    }
-
-    public Date getCreateAt() {
-        return createAt;
-    }
-
-    public Media(String name, long size, char type, String location) {
+    public Media(String name, char type, String location) {
         this.name = name;
-        this.size = size;
         this.type = type;
         this.location = location;
     }

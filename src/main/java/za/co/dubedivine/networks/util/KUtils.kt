@@ -1,6 +1,7 @@
 package za.co.dubedivine.networks.util
 
 import com.mongodb.gridfs.GridFS
+import com.mongodb.gridfs.GridFSDBFile
 import org.json.JSONObject
 import org.springframework.context.annotation.AnnotationConfigApplicationContext
 import org.springframework.data.mongodb.core.MongoTemplate
@@ -16,7 +17,6 @@ import za.co.dubedivine.networks.repository.TagRepository
 import za.co.dubedivine.networks.repository.UserRepository
 import za.co.dubedivine.networks.repository.VoteEntityBridgeRepository
 import za.co.dubedivine.networks.services.AndroidPushNotificationService
-//import za.co.dubedivine.networks.services.AndroidPushNotificationService
 import za.co.dubedivine.networks.services.elastic.ElasticQuestionService
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ExecutionException
@@ -108,10 +108,6 @@ object KUtils {
         return tag.substringAfter('#')
     }
 
-    fun getGridFs(mongoTemplate: MongoTemplate): GridFS {
-        return GridFS(mongoTemplate.db)
-    }
-
     fun genMediaTypeFromContentType(contentType: String) : Char {
         // so we know the video part we only have to check for the
         // pdf and the pictures
@@ -119,7 +115,7 @@ object KUtils {
             "pdf", "docx", "ppt", "xls", "txt", "doc"  -> {
                 Media.DOCS_TYPE
             }
-            else -> {
+            else -> {   // todo: would rather check if this if its an image then default to docs
                 Media.PICTURE_TYPE
             }
         }
@@ -140,9 +136,9 @@ object KUtils {
     fun saveQuestionOnElasticOnANewThread( elasticQuestionService: ElasticQuestionService,
                                                    taskExecutor: ThreadPoolTaskExecutor,
                                                    question: Question) {
-        taskExecutor.execute({
+        taskExecutor.execute {
             updateElasticQuestion(elasticQuestionService, question)
-        })
+        }
     }
 
     private fun updateElasticQuestion(elasticQuestionService: ElasticQuestionService, question: Question) {
@@ -150,11 +146,11 @@ object KUtils {
     }
 
     fun createVoteEntity(voteEntityBridgeRepo: VoteEntityBridgeRepository, id : Pair<String, String>, voteDirection: Boolean): VoteEntityBridge {
-        if (voteEntityBridgeRepo.exists(id)) {
-            return voteEntityBridgeRepo.findOne(id)
+        return if (voteEntityBridgeRepo.existsById(id)) {
+            voteEntityBridgeRepo.findById(id).get()
         } else {
             // if the user voted the other direction then we update the direction to the new direction
-            return voteEntityBridgeRepo.save(VoteEntityBridge(id, voteDirection))
+            voteEntityBridgeRepo.save(VoteEntityBridge(id, voteDirection))
         }
     }
 
@@ -219,10 +215,10 @@ object KUtils {
     }
 
     inline fun executeJobOnThread(crossinline job: () -> Unit) {
-        getThreadPoolExecutor().execute({
+        getThreadPoolExecutor().execute {
             println("putting job on thread")
             job()
-        })
+        }
     }
 
     //NB caution this function is misleading read carefully
@@ -261,12 +257,12 @@ object KUtils {
             }
         }
         //update the user as well
-        userRepository.save(userRepository.findOne(user.id))
+        userRepository.save(userRepository.findById(user.id).get())
         return elasticTag
     }
 }
 
-enum class ENTITY_TYPE() {
+enum class ENTITY_TYPE {
     QUESTION, ANSWER, QUESTION_COMMENT, ANSWER_COMMENT, QUESTION_VOTE, ANSWER_VOTE
 }
 

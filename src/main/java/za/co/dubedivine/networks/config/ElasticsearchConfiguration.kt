@@ -7,15 +7,16 @@ import org.springframework.data.elasticsearch.repository.config.EnableElasticsea
 import java.net.InetAddress
 import org.springframework.data.elasticsearch.core.ElasticsearchTemplate
 import org.springframework.data.elasticsearch.core.ElasticsearchOperations
-import org.elasticsearch.common.transport.InetSocketTransportAddress
 import org.elasticsearch.client.transport.TransportClient
 import org.elasticsearch.common.settings.Settings
+import org.elasticsearch.common.transport.TransportAddress
+import org.elasticsearch.transport.client.PreBuiltTransportClient
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Bean
 
 
 @Configuration
-@EnableElasticsearchRepositories(basePackages = arrayOf("za.co.dubedivine.networks.repository.elastic"))
+@EnableElasticsearchRepositories(basePackages = ["za.co.dubedivine.networks.repository.elastic"])
 class ElasticsearchConfiguration {
 
 //    @Autowired private lateinit var operations: ElasticsearchOperations
@@ -30,25 +31,21 @@ class ElasticsearchConfiguration {
     private val esClusterName: String? = null
 
     @Bean
-    @Throws(Exception::class)
     fun client(): Client {
 
-        val esSettings = Settings.settingsBuilder()
+        val esSettings = Settings.builder()
                 .put("cluster.name", esClusterName)
+                .put("client.transport.sniff", true)
                 .build()
 
         //https://www.elastic.co/guide/en/elasticsearch/guide/current/_transport_client_versus_node_client.html
-        return TransportClient.builder()
-                .settings(esSettings)
-                .build()
-                .addTransportAddress(
-                        InetSocketTransportAddress(
-                                InetAddress.getByName(esHost), esPort))
+        val client: TransportClient = PreBuiltTransportClient(esSettings)
+        client.addTransportAddress(TransportAddress(InetAddress.getByName(esHost), esPort))
+        return client
     }
 
-    @Bean
-    @Throws(Exception::class)
-    fun elasticsearchTemplate(): ElasticsearchOperations {
-        return ElasticsearchTemplate(client())
-    }
+//    @Bean
+//    fun elasticsearchTemplate(): ElasticsearchOperations {
+//        return ElasticsearchTemplate(client())
+//    }
 }

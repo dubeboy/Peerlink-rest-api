@@ -1,5 +1,6 @@
 package za.co.dubedivine.networks.controller
 
+import org.springframework.data.repository.findByIdOrNull
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
@@ -30,8 +31,8 @@ class TagController(private val tagRepository: TagRepository,
                        @PathVariable("u_id") userId: String): ResponseEntity<StatusResponseEntity<Tag>> {
 
         //function for a user  to listen to a particular TAG
-        val tag = tagRepository.findOne(tagId)
-        val user = userRepository.findOne(userId)
+        val tag = tagRepository.findByIdOrNull(tagId)
+        val user = userRepository.findByIdOrNull(userId)
         if (user != null && tag != null) {
 
             val tags = user.tags
@@ -64,7 +65,7 @@ class TagController(private val tagRepository: TagRepository,
     @DeleteMapping("/{id}")
     fun delete(@PathVariable("id") id: String) {
         //todo: should also go the tags part and then delete the reference
-        tagRepository.delete(id)
+        tagRepository.deleteById(id)
     }
 
     @GetMapping("/suggest")
