@@ -22,7 +22,7 @@ class UsersKontroller(private val userRepository: UserRepository,
             return ResponseEntity(StatusResponseEntity(true,
                     "User Exits", userRepository.findByEmail(user.email)),
                     HttpStatus.OK)
-        } else if (!userRepository.existsByEmail(user.email) &&  //todo these are bad should be oved to their own functions
+        } else if (!userRepository.existsByEmail(user.email) &&  //todo these are bad should be over to their own functions
                 user.degree != null &&
                 user.degree.isNotBlank()) {
 

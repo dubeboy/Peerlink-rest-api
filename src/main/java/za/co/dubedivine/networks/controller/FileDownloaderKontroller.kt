@@ -18,7 +18,7 @@ import java.io.InputStream
 
 
 @RestController
-@RequestMapping() // I would like to make the request look like its just getting a static resource
+@RequestMapping // I would like to make the request look like its just getting a static resource
 class FileDownloaderKontroller(val gridFsOperations: GridFsOperations) {
     @GetMapping("/{id}")
     fun getFile(@PathVariable("id") id: String): ResponseEntity<ByteArrayResource> {

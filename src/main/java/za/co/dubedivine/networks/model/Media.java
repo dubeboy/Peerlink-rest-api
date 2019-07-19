@@ -3,6 +3,7 @@ package za.co.dubedivine.networks.model;
 
 
 import org.springframework.data.annotation.Id;
+import org.springframework.data.elasticsearch.annotations.Field;
 
 import java.util.Date;
 
@@ -29,6 +30,12 @@ public class Media {
     public char getType() {
         return type;
     }
+
+    public String getLocation() {
+        return location;
+    }
+
+
 
     public Media(String name, char type, String location) {
         this.name = name;

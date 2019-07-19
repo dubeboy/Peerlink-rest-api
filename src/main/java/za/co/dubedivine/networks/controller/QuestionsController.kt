@@ -84,27 +84,25 @@ class QuestionsController(private val repository: QuestionRepository,
         val q = repository.insert(question)
         val elasticTagToSave = KUtils.getElasticTag(q, user, tagRepository, userRepository)
 
-        taskExecutor.execute(object : Runnable {
-            override fun run() {
-                //should stop auto enable mongo and then i can create a mongo template
-                val elasticQuestion = ElasticQuestion(q.title, q.body, q.votes, q.tags, q.type)
-                elasticQuestion.id = q.id
-                elasticQuestion.user = user
-             //   userRepository.save(user) // update the tags for this user
-                //sends notification to the users
-                elasticQuestionService.save(elasticQuestion)
-                elasticTagRepo.save(elasticTagToSave)
-                val users = KUtils.retrieveUsersInThread(userRepository, q)
-                println("trying executing coolness")
-                for (usr in users) {
-                    KUtils.notifyUser(androidPushNotifications,
-                            "Q: ${q.title}",
-                            q.body,
-                            usr.fcmToken,
-                            Data(q.id, ENTITY_TYPE.QUESTION))
-                }
+        taskExecutor.execute {
+            //should stop auto enable mongo and then i can create a mongo template
+            val elasticQuestion = ElasticQuestion(q.title, q.body, q.votes, q.tags, q.type)
+            elasticQuestion.id = q.id
+            elasticQuestion.user = user
+            //   userRepository.save(user) // update the tags for this user
+            //sends notification to the users
+            elasticQuestionService.save(elasticQuestion)
+            elasticTagRepo.save(elasticTagToSave)
+            val users = KUtils.retrieveUsersInThread(userRepository, q)
+            println("trying executing coolness")
+            for (usr in users) {
+                KUtils.notifyUser(androidPushNotifications,
+                        "Q: ${q.title}",
+                        q.body,
+                        usr.fcmToken,
+                        Data(q.id, ENTITY_TYPE.QUESTION))
             }
-        })
+        }
 
         val uri = ServletUriComponentsBuilder.fromCurrentRequest().path("/{id}").buildAndExpand(question.id).toUri()
         val httpHeaders = HttpHeaders()
