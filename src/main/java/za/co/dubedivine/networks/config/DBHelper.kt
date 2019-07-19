@@ -1,38 +1,38 @@
-//package za.co.dubedivine.networks.config
+package za.co.dubedivine.networks.config
+
+import org.springframework.boot.CommandLineRunner
+import org.springframework.data.elasticsearch.core.ElasticsearchOperations
+import org.springframework.stereotype.Component
+import za.co.dubedivine.networks.model.*
+import za.co.dubedivine.networks.model.elastic.ElasticQuestion
+import za.co.dubedivine.networks.model.elastic.ElasticTag
+import za.co.dubedivine.networks.repository.QuestionRepository
+import za.co.dubedivine.networks.repository.UserRepository
+import za.co.dubedivine.networks.repository.VoteEntityBridgeRepository
+import za.co.dubedivine.networks.repository.elastic.ElasticTagRepo
+import za.co.dubedivine.networks.services.elastic.ElasticQuestionService
+import javax.annotation.PreDestroy
+/**
+ * Created by divine on 2017/08/11.
+ */
+@Component
+class DBHelper(private val questionRepository: QuestionRepository,
+               private val userRepository: UserRepository,
+               private val elasticQuestionService: ElasticQuestionService,
+               private val elasticSearchOperations: ElasticsearchOperations,
+               private val voteEntityBridgeRepo: VoteEntityBridgeRepository,
+
+               private val elasticTagRepo: ElasticTagRepo) : CommandLineRunner {
 //
-//import org.springframework.boot.CommandLineRunner
-//import org.springframework.data.elasticsearch.core.ElasticsearchOperations
-//import org.springframework.stereotype.Component
-//import za.co.dubedivine.networks.model.*
-//import za.co.dubedivine.networks.model.elastic.ElasticQuestion
-//import za.co.dubedivine.networks.model.elastic.ElasticTag
-//import za.co.dubedivine.networks.repository.QuestionRepository
-//import za.co.dubedivine.networks.repository.UserRepository
-//import za.co.dubedivine.networks.repository.VoteEntityBridgeRepository
-//import za.co.dubedivine.networks.repository.elastic.ElasticTagRepo
-//import za.co.dubedivine.networks.services.elastic.ElasticQuestionService
-//import javax.annotation.PreDestroy
-///**
-// * Created by divine on 2017/08/11.
-// */
-//@Component
-//class DBHelper(private val questionRepository: QuestionRepository,
-//               private val userRepository: UserRepository,
-//               private val elasticQuestionService: ElasticQuestionService,
-//               private val elasticSearchOperations: ElasticsearchOperations,
-//               private val voteEntityBridgeRepo: VoteEntityBridgeRepository,
 //
-//               private val elasticTagRepo: ElasticTagRepo) : CommandLineRunner {
+    @PreDestroy
+    fun deleteIndex() {
+        println("calling predestroy this one here")
+        elasticSearchOperations.deleteIndex(ElasticQuestion::class.java)
+    }
 //
-//
-//    @PreDestroy
-//    fun deleteIndex() {
-//        println("calling predestroy this one here")
-//        elasticSearchOperations.deleteIndex(ElasticQuestion::class.java)
-//    }
-//
-//    @Throws(Exception::class)
-//    override fun run(vararg strings: String) {
+    @Throws(Exception::class)
+    override fun run(vararg strings: String) {
 //
 //       val user =  userRepository.save(User("DDD", "sss@msms.com", null))
 //
@@ -74,14 +74,15 @@
 //        //TODO : remove at production
 //        val savedQuestions: MutableList<Question> = questionRepository.run {
 //            deleteAll() //delete all first
-//            save(arrayListOf(questionA, questionB))
+//           // save(arrayListOf(questionA, questionB))
 //        }
 //
-//        userRepository.deleteAll()
+       // userRepository.deleteAll()
 //        voteEntityBridgeRepo.save(VoteEntityBridge(Pair(savedQuestions[0].id, user.id ), true))
 //
 //        println("deleting all the available content in the elastic database")
-//        elasticQuestionService.deleteAll()
+        questionRepository.deleteAll()
+        elasticQuestionService.deleteAll()
 //        elasticSearchOperations.refresh(ElasticQuestion::class.java)
 //        savedQuestions.forEach {
 //            val el = ElasticQuestion(it.title, it.body, it.votes, it.tags, it.type)
@@ -90,7 +91,7 @@
 //            el.id = it.id
 //            elasticQuestionService.save(el)
 //        }
-//        elasticTagRepo.deleteAll()
+        elasticTagRepo.deleteAll()
 //        elasticTagRepo.save(arrayListOf(ElasticTag("phy1a"), ElasticTag("etn1b")))
-//    }
-//}
+    }
+}
