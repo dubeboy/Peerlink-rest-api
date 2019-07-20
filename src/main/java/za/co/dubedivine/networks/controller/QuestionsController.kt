@@ -152,7 +152,10 @@ class QuestionsController(private val repository: QuestionRepository,
             } else { // this application type is
                 val docs: ArrayList<Media> = arrayListOf()
                 files.forEach {
+                    metaData[HttpHeaders.CONTENT_TYPE] = it.contentType
                     val createFile = gridFSOperations.store(it.inputStream, it.originalFilename, it.contentType, metaData)
+                    println("mime is: ${it.contentType}")
+                    println("the is of the file is: $createFile")
                     //need to change this to map to the proper mime
                     docs.add(Media(
                             it.originalFilename,

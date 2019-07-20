@@ -29,18 +29,18 @@ class FileDownloaderKontroller(val gridFsOperations: GridFsOperations) {
             if (gridFSFile != null && gridFSFile.length != 0L) {
 
                 val filename = gridFSFile.filename
-                val contentType = gridFSFile.contentType // todo : get it from mine
+                val metaData = gridFSFile.metadata // todo : get it from mine
 
                 val inputStream = gridFsOperations.getResource(gridFSFile).inputStream
                 println("input stream available is ${inputStream.available()}")
                 val byteArray = getBytes(inputStream)
                 val byteArrayResource = ByteArrayResource(byteArray)
 
-                println("the content Type is $contentType and the file name is $filename")
+                println("the metadata is $metaData the content Type is ${metaData!![HttpHeaders.CONTENT_TYPE]} and the file name is $filename")
                 println("the sizes ${byteArray.size} and the actual size from mongo is ${gridFSFile.length} ")
 
                 val headers = HttpHeaders()
-                headers.set(HttpHeaders.CONTENT_TYPE, contentType)
+                headers.set(HttpHeaders.CONTENT_TYPE, metaData[HttpHeaders.CONTENT_TYPE].toString())
                 headers.set(HttpHeaders.CONTENT_DISPOSITION, """attachment; filename="$filename"""")
                 headers.set(HttpHeaders.CONTENT_LENGTH, byteArray.size.toString())
 
