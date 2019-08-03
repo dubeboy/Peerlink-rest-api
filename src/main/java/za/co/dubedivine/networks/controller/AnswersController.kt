@@ -88,13 +88,13 @@ class AnswersController(//operations that can be done on a Answers
     fun voteAnswer(@PathVariable("q_id") questionId: String,
                    @PathVariable("a_id") ans: String,
                    @RequestParam("vote") vote: Boolean,
-                   @RequestParam("user_id") userId: String): ResponseEntity<StatusResponseEntity<Answer>> {
+                   @RequestParam("user_id") userId: String): ResponseEntity<StatusResponseEntity<Boolean>> {
 
         val voteDirection = voteEntityBridgeRepo.findByIdOrNull(Pair(questionId, userId))?.isVoteTheSameDirection == vote
         val voted = voteEntityBridgeRepo.existsById(Pair(questionId, userId)) && voteDirection
 
         if (voted) {
-            return ResponseEntity(StatusResponseEntity<Answer>(false,
+            return ResponseEntity(StatusResponseEntity(false,
                     "you have already voted", null),
                     HttpStatus.OK)
         } else {
@@ -118,14 +118,14 @@ class AnswersController(//operations that can be done on a Answers
                                 }
                             }
                         }
-                        return ResponseEntity(StatusResponseEntity<Answer>(true,
-                                "Vote ${if (vote) "added" else "removed"} ", null),
+                        return ResponseEntity(StatusResponseEntity(true,
+                                "Vote ${if (vote) "added" else "removed"} ", vote),
                                 HttpStatus.OK)
                     }
                 }
             }
 
-            return ResponseEntity(StatusResponseEntity<Answer>(false,
+            return ResponseEntity(StatusResponseEntity(false,
                     "sorry we cannot find this answer that you want to vote on", null), HttpStatus.BAD_REQUEST)
         }
     }
