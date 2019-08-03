@@ -40,7 +40,7 @@ class AnswersController(//operations that can be done on a Answers
         private val androidPushNotifications: AndroidPushNotificationService) {
 
     //todo: duplicates every time I save
-    @PutMapping("/{q_id}/answer") // questions/1/answer
+    @PutMapping("/{q_id}/answer")
     fun addAnswer(@PathVariable("q_id") questionId: String, @RequestBody answer: Answer):
             ResponseEntity<StatusResponseEntity<Answer>> {   // could also take in the the whole question
         val questionOptional = questionRepository.findById(questionId)
@@ -177,7 +177,7 @@ class AnswersController(//operations that can be done on a Answers
     @PostMapping("/{q_id}/answer/{a_id}/files")
     fun addFiles(@PathVariable("q_id") questionId: String,
                  @PathVariable("a_id") answerId: String,
-                 @RequestPart files: List<MultipartFile>): ResponseEntity<StatusResponseEntity<Question>> {
+                 @RequestPart files: List<MultipartFile>): ResponseEntity<StatusResponseEntity<Answer>> {
         val question = questionRepository.findByIdOrNull(questionId)
         if (question != null) {
             var answer: Answer? = null
@@ -208,7 +208,7 @@ class AnswersController(//operations that can be done on a Answers
                     println(savedQuestion)
                     KUtils.saveQuestionOnElasticOnANewThread(elasticQuestionService, taskExecutor, savedQuestion)
                     return ResponseEntity(StatusResponseEntity(
-                            true, "file created", savedQuestion), HttpStatus.CREATED)
+                            true, "file created", savedQuestion.answers.last()), HttpStatus.CREATED)
                 } else { // this application type is
                     val docs: ArrayList<Media> = arrayListOf()
                     files.forEach {
@@ -225,7 +225,7 @@ class AnswersController(//operations that can be done on a Answers
                     answer.files = docs
                     val savedQuestion = questionRepository.save(question)
                     KUtils.saveQuestionOnElasticOnANewThread(elasticQuestionService, taskExecutor, savedQuestion)
-                    return ResponseEntity(StatusResponseEntity(true, "files created", question), HttpStatus.CREATED)
+                    return ResponseEntity(StatusResponseEntity(true, "files created", savedQuestion.answers.last()), HttpStatus.CREATED)
                 }
             } else {
                 return ResponseEntity(StatusResponseEntity(false,

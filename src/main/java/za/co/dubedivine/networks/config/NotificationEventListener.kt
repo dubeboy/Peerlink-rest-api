@@ -11,7 +11,7 @@ import org.springframework.web.socket.messaging.SessionConnectedEvent
 class  NotificationEventListener(private val template: SimpMessageSendingOperations) {
 
 //    @EventListener
-    fun handleWebSocketCnnectionListener(event: SessionConnectedEvent) {
+    fun handleWebSocketConnectionListener(event: SessionConnectedEvent) {
         logger.info("Recieved a new websocket connection")
     }
 
