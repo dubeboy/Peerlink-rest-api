@@ -90,17 +90,16 @@ class AnswersController(//operations that can be done on a Answers
                    @RequestParam("vote") vote: Boolean,
                    @RequestParam("user_id") userId: String): ResponseEntity<StatusResponseEntity<Boolean>> {
 
-        val voteDirection = voteEntityBridgeRepo.findByIdOrNull(Pair(questionId, userId))?.isVoteTheSameDirection == vote
-        val voted = voteEntityBridgeRepo.existsById(Pair(questionId, userId)) && voteDirection
+        val voteDirection = voteEntityBridgeRepo.findByIdOrNull(Pair(ans, userId))?.isVoteTheSameDirection == vote
 
-        if (voted) {
+        if (voteDirection) {
             return ResponseEntity<StatusResponseEntity<Boolean>>(StatusResponseEntity<Boolean>(false,
                     "you have already voted", null),
                     HttpStatus.OK)
         } else {
-            createVoteEntity(voteEntityBridgeRepo, Pair(questionId, userId), vote)
+            createVoteEntity(voteEntityBridgeRepo, Pair(ans, userId), vote)
             val answers: MutableList<Answer>
-            val question = questionRepository.findByIdOrNull(questionId)
+            val question = questionRepository.findByIdOrNull(questionId) // todo MONGO
             if (question != null) {
                 answers = question.answers
                 for (answer in answers) {
