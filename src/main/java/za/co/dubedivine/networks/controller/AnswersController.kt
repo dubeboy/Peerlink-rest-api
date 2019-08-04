@@ -94,7 +94,7 @@ class AnswersController(//operations that can be done on a Answers
         val voted = voteEntityBridgeRepo.existsById(Pair(questionId, userId)) && voteDirection
 
         if (voted) {
-            return ResponseEntity(StatusResponseEntity(false,
+            return ResponseEntity<StatusResponseEntity<Boolean>>(StatusResponseEntity<Boolean>(false,
                     "you have already voted", null),
                     HttpStatus.OK)
         } else {
@@ -118,14 +118,14 @@ class AnswersController(//operations that can be done on a Answers
                                 }
                             }
                         }
-                        return ResponseEntity(StatusResponseEntity(true,
+                        return ResponseEntity<StatusResponseEntity<Boolean>>(StatusResponseEntity<Boolean>(true,
                                 "Vote ${if (vote) "added" else "removed"} ", vote),
                                 HttpStatus.OK)
                     }
                 }
             }
 
-            return ResponseEntity(StatusResponseEntity(false,
+            return ResponseEntity<StatusResponseEntity<Boolean>>(StatusResponseEntity<Boolean>(false,
                     "sorry we cannot find this answer that you want to vote on", null), HttpStatus.BAD_REQUEST)
         }
     }

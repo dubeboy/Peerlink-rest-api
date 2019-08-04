@@ -274,11 +274,10 @@ class QuestionsController(private val repository: QuestionRepository,
                      @RequestParam("user_id") userId: String): ResponseEntity<StatusResponseEntity<Answer>> { // <answer??> any ways its null
 
         val voteDirection = voteEntityBridgeRepo.findByIdOrNull(Pair(questionId, userId))?.isVoteTheSameDirection == vote
-        val voted = voteEntityBridgeRepo.existsById(Pair(questionId, userId)) && voteDirection
 
         return when {
         //if the user has already voted
-            voted -> ResponseEntity(StatusResponseEntity(
+            voteDirection -> ResponseEntity(StatusResponseEntity(
                     false,
                     "No vote casted mate", Answer()),
                     HttpStatus.OK)

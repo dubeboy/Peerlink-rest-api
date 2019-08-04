@@ -147,7 +147,9 @@ object KUtils {
 
     fun createVoteEntity(voteEntityBridgeRepo: VoteEntityBridgeRepository, id : Pair<String, String>, voteDirection: Boolean): VoteEntityBridge {
         return if (voteEntityBridgeRepo.existsById(id)) {
-            voteEntityBridgeRepo.findById(id).get()
+            val voteEntity = voteEntityBridgeRepo.findById(id).get()
+            voteEntity.isVoteTheSameDirection = voteDirection
+            voteEntityBridgeRepo.save(voteEntity)
         } else {
             // if the user voted the other direction then we update the direction to the new direction
             voteEntityBridgeRepo.save(VoteEntityBridge(id, voteDirection))
