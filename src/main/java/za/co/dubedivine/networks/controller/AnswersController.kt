@@ -236,4 +236,11 @@ class AnswersController(//operations that can be done on a Answers
                     "sorry could not add files because we could not find that question"), HttpStatus.NOT_FOUND)
         }
     }
+
+    @PostMapping("/{q_id}/answer/{a_id}/accept")
+    fun acceptAnswer(@PathVariable("q_id") questionId: String,
+                     @PathVariable("a_id") answerId: String,
+                     @RequestParam("user_id") userId: String) {
+
+    }
 }
