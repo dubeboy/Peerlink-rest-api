@@ -191,8 +191,8 @@ class QuestionsController(private val repository: QuestionRepository,
                 .body(resource)
     }
 
-    @GetMapping("/tag_search?t_id={tag_name}")
-    fun getTagQuestions(@PathVariable("tag_name") tagName: String): Set<Question> {
+    @GetMapping("/tag_search")
+    fun getTagQuestions(@RequestParam("tag_name") tagName: String): Set<Question> {
         return repository.findByTagsName(tagName).toSet()
     }
 
@@ -312,4 +312,5 @@ class QuestionsController(private val repository: QuestionRepository,
             }
         }
     }
+
 }

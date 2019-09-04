@@ -1,5 +1,6 @@
 package za.co.dubedivine.networks.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.index.Indexed;
@@ -11,6 +12,8 @@ import java.util.Set;
 
 @Document
 public class User {
+    // todo add university property to filter down
+
     @Id
     private String id;  // initialised by my faithful mongodb!!
     @Indexed
@@ -21,8 +24,10 @@ public class User {
     @JsonProperty("photo_url")
     private String photoUrl;
     private String degree;
+    @JsonIgnore
     private Set<String> modules;
     @Indexed
+    @JsonIgnore
     private List<Tag> tags = new ArrayList<>();
     private String fcmToken;
 

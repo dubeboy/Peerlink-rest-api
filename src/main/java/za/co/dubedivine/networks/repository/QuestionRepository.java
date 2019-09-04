@@ -7,7 +7,7 @@ import za.co.dubedivine.networks.model.Question;
 import java.util.List;
 
 @Repository
-public interface QuestionRepository extends MongoRepository<Question, String>{
-//    @Query("question.find({\"tags.name\": \"?0\")")
-    List<Question> findByTagsName(String tags);
+public interface QuestionRepository extends MongoRepository<Question, String> {
+//  @Query("question.find({\"tags.name\": \"?0\")")
+    List<Question> findByTagsName(String tag);
 }
