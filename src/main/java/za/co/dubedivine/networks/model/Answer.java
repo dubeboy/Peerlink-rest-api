@@ -1,7 +1,5 @@
 package za.co.dubedivine.networks.model;
 
-import org.springframework.data.elasticsearch.annotations.Field;
-import org.springframework.data.elasticsearch.annotations.FieldType;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.util.ArrayList;
@@ -16,7 +14,9 @@ import java.util.UUID;
 public class Answer  {
     private String body;
     private long votes;
-    private boolean isChoosen;
+
+
+    private boolean isChosen = false;
     private Date createAt = new Date();
     private ArrayList<Comment> comments = new ArrayList<>();
     private Media video;
@@ -24,19 +24,18 @@ public class Answer  {
     private List<Media> files;
     private User user;
 
-    public Answer() {
-    }
+    public Answer() {}
 
-    public Answer(String body, long votes, boolean isChoosen) {
+    public Answer(String body, long votes, boolean isChosen) {
         this.body = body;
         this.votes = votes;
-        this.isChoosen = isChoosen;
+        this.isChosen = isChosen;
     }
 
     public Answer(String body, long votes, boolean isChosen, ArrayList<Comment> comments, Media video) {
         this.body = body;
         this.votes = votes;
-        this.isChoosen = isChosen;
+        this.isChosen = isChosen;
         this.comments = comments;
         this.video = video;
     }
@@ -52,8 +51,8 @@ public class Answer  {
         this.votes = votes;
     }
 
-    public boolean isChoosen() {
-        return isChoosen;
+    public boolean isChosen() {
+        return isChosen;
     }
 
     public Date getCreateAt() {
@@ -79,18 +78,17 @@ public class Answer  {
         return id;
     }
 
-    // @Override
-    // public String toString() {
 
-    // }
-
+    public void setChosen(boolean chosen) {
+        isChosen = chosen;
+    }
 
     @Override
     public String toString() {
         return "Answer{" +
                 "body='" + body + '\'' +
                 ", votes=" + votes +
-                ", isChoosen=" + isChoosen +
+                ", isChosen=" + isChosen +
                 ", createAt=" + createAt +
                 ", comments=" + comments +
                 ", video=" + video +

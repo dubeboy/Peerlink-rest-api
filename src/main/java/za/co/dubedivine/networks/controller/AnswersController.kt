@@ -1,7 +1,6 @@
 package za.co.dubedivine.networks.controller
 
 import com.mongodb.BasicDBObject
-import com.mongodb.DBObject
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.gridfs.GridFsOperations
@@ -240,7 +239,27 @@ class AnswersController(//operations that can be done on a Answers
     @PostMapping("/{q_id}/answer/{a_id}/accept")
     fun acceptAnswer(@PathVariable("q_id") questionId: String,
                      @PathVariable("a_id") answerId: String,
-                     @RequestParam("user_id") userId: String) {
+                     @RequestBody userId: String): ResponseEntity<StatusResponseEntity<Boolean>> {
+        val question = questionRepository.findByIdOrNull(questionId)
+        return if (question != null) {
 
+            var answer: Answer? = null
+            question.answers.filter { it.isChosen && it.id != answerId }.forEach { it.isChosen = false }
+            question.answers.find { it.id == answerId }?.let {
+                answer = it
+                it.isChosen = !it.isChosen
+            }
+
+            val savedQuestion = questionRepository.save(question)
+            KUtils.saveQuestionOnElasticOnANewThread(elasticQuestionService, taskExecutor, savedQuestion)
+            val message = if (answer!!.isChosen)
+                                     "You have accepted this as the correct answer to your question"
+                                  else
+                                     "You have removed this answer as your prefered answer"
+            KUtils.respond(true, message, answer!!.isChosen)
+        } else {
+            ResponseEntity(StatusResponseEntity(false,
+                    "sorry could not add files because we could not find that question"), HttpStatus.NOT_FOUND)
+        }
     }
 }

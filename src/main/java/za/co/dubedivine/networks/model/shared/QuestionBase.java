@@ -37,9 +37,7 @@ public abstract class QuestionBase {
 
 
     // satisfy jackson
-    public QuestionBase() {
-
-    }
+    public QuestionBase() {}
 
 
     public QuestionBase(String title, String body, long votes, List<Tag> tags, String type) {
