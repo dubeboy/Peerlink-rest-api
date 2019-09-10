@@ -34,6 +34,7 @@ public abstract class QuestionBase {
     List<Media> files; //this can be combined with video dwag
     private @Field(type = FieldType.Date)
     Date createdAt = new Date();
+    private boolean answered = false;
 
 
     // satisfy jackson
@@ -161,5 +162,13 @@ public abstract class QuestionBase {
 
     public User getUser() {
         return user;
+    }
+
+    public boolean isAnswered() {
+        return answered;
+    }
+
+    public void setAnswered(boolean answered) {
+        this.answered = answered;
     }
 }
