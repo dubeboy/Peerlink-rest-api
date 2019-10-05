@@ -2,6 +2,8 @@ package za.co.dubedivine.networks.model.shared;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import org.springframework.data.annotation.Id;
+import org.springframework.data.elasticsearch.annotations.Field;
+import org.springframework.data.elasticsearch.annotations.FieldType;
 import org.springframework.data.mongodb.core.index.Indexed;
 import za.co.dubedivine.networks.model.Question;
 
@@ -10,6 +12,7 @@ import java.util.Date;
 import java.util.List;
 
 public abstract class TagBase {
+    @Field(type = FieldType.Keyword)
     @Indexed
     @Id
     private String name;  // name is the ID means

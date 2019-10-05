@@ -1,0 +1,259 @@
+POST peerlink/_search 
+{
+  "query" : {
+    "match": {
+      "body": "atom"
+    }
+  }
+}
+
+POST peerlink/_search 
+{
+  "suggest": {
+    "my-suggest-1" : {
+      "text" : "phy1b",
+      "term" : {
+        "field" : "body"
+      }
+    }
+  }
+}
+
+GET peerlink/_search
+{
+    "query": {
+        "fuzzy" : {
+            "body" : {
+                "value" :         "atm",
+                    "boost" :         1.0,
+                    "fuzziness" :     2,
+                    "prefix_length" : 0,
+                    "max_expansions": 100
+            }
+        }
+    }
+}
+
+GET peerlink/_search
+{
+    "query":  {
+        "nested" : {
+            "path" : "tags",
+            "query" : {
+                "fuzzy" : {
+                    "name" : {
+                      "value" :         "phy1a",
+                      "boost" :         1.0,
+                      "fuzziness" :     2,
+                      "prefix_length" : 0,
+                      "max_expansions": 100
+                    }
+                }
+            },
+            "score_mode" : "avg"
+        }
+    }
+}
+
+GET peerlink/_search
+{
+    "query":  {
+        "nested" : {
+            "path" : "tags",
+            "query" : {
+                "match": {
+                    "tags.name": "phy1a"
+              }
+            },
+            "score_mode" : "avg"
+        }
+    }
+}
+
+GET peerlink/_search
+{
+    "query":  {
+        "bool": {
+          "must": [
+            {
+              "match": {
+                "": "TEXT"
+              }
+            }
+          ]
+        }
+    }
+}
+
+———
+
+Tag suggestion
+
+GET peerlink/_search
+{
+    "query":  {
+        "nested" : {
+            "path" : "tags",
+            "query" : {
+                "fuzzy" : {
+                    "tags.name" : {
+                      "value" :         "phy",
+                      "boost" :         1.0,
+                      "fuzziness" :     2,
+                      "prefix_length" : 0,
+                      "max_expansions": 100
+                    }
+                }
+            },
+            "score_mode" : "avg"
+        }
+    }
+}
+
+Search by filtering with tag
+
+
+GET peerlink/_search
+{
+    "query":  {
+        "nested" : {
+            "path" : "tags",
+            "query" : {
+                  "bool": {
+                    "must": [
+                     {
+                      "match": {
+                      "tags.name": "phy1a"
+                      }
+                    }
+                ]
+              }
+            },
+            "score_mode" : "avg"
+        }
+    }
+}
+
+— finally working
+
+GET peerlink/_search
+{
+  "query": {
+    "bool": {
+      "must": {
+        "fuzzy" : {
+            "body" : {
+                "value" :         "atm",
+                    "boost" :         1.0,
+                    "fuzziness" :     2,
+                    "prefix_length" : 0,
+                    "max_expansions": 100
+            }
+        }
+      },
+      "filter": {
+        "nested" : {
+            "path" : "tags",
+            "query" : {
+                      "match": {
+                      "tags.name": "phy1a"
+                  }
+            },
+            "score_mode" : "avg"
+        }
+      }
+    }
+  }
+}
+
+GET peerlink/_search
+{
+  "query": {
+    "bool": {
+      "must": {
+        "function_score": {
+            "query": {
+                "multi_match": {
+                    "query": "We doing magnets",
+                    "fields": [
+                        "title^3",
+                        "body^2.5"
+                    ],
+                    "fuzziness" : "2",
+                    "prefix_length" : 0,
+                    "max_expansions": 100,
+                    "boost" :         1.0
+                }
+            }
+        }
+      },
+      "filter": {
+        "nested" : {
+            "path" : "tags",
+            "query" : {
+                       "bool": {
+          "should": [
+            {
+              "match": {
+                "tags.name": "phy1a"
+              }
+            }, 
+            {
+               "match": {
+                "tags.name": "atom"
+              }
+            }
+          ]
+        }
+            },
+            "score_mode" : "avg"
+        }
+      }
+    }
+  }
+}
+
+-- without the over head of function_score
+
+GET peerlink/_search
+{
+  "query": {
+    "bool": {
+      "must": {
+                "multi_match": {
+                    "query": "We doing magnets",
+                    "fields": [
+                        "title^3",
+                        "body^2.5"
+                    ],
+                    "fuzziness" : "2",
+                    "prefix_length" : 0,
+                    "max_expansions": 100,
+                    "boost" :         1.0
+                }
+      },
+      "filter": {
+        "nested" : {
+            "path" : "tags",
+            "query" : {
+                       "bool": {
+          "should": [
+            {
+              "match": {
+                "tags.name": "phy1a"
+              }
+            }, 
+            {
+               "match": {
+                "tags.name": "atom"
+              }
+            }
+          ]
+        }
+            },
+            "score_mode" : "avg"
+        }
+      }
+    }
+  }
+}

@@ -2,10 +2,16 @@ package za.co.dubedivine.networks.controller
 
 import com.mongodb.BasicDBObject
 import com.mongodb.client.gridfs.model.GridFSFile
+import org.apache.lucene.search.join.ScoreMode
+import org.elasticsearch.common.lucene.search.function.FunctionScoreQuery
+import org.elasticsearch.index.query.QueryBuilders.*
 import org.springframework.context.annotation.AnnotationConfigApplicationContext
 import org.springframework.core.io.InputStreamResource
 import org.springframework.core.io.Resource
+import org.springframework.data.domain.Page
 import org.springframework.data.domain.Sort
+import org.springframework.data.elasticsearch.core.query.NativeSearchQueryBuilder
+import org.springframework.data.elasticsearch.core.query.SearchQuery
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.gridfs.GridFsOperations
@@ -61,7 +67,6 @@ class QuestionsController(private val repository: QuestionRepository,
             return repository.findAll(sort)
         }
 
-
     @GetMapping("/{q_id}")
     fun getQuestion(@PathVariable("q_id") questionId: String): ResponseEntity<StatusResponseEntity<Question>> {
 
@@ -91,6 +96,7 @@ class QuestionsController(private val repository: QuestionRepository,
             elasticQuestion.user = user
             //   userRepository.save(user) // update the tags for this user
             //sends notification to the users
+
             elasticQuestionService.save(elasticQuestion)
             elasticTagRepo.save(elasticTagToSave)
             val users = KUtils.retrieveUsersInThread(userRepository, q)

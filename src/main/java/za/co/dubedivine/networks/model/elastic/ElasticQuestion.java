@@ -10,7 +10,7 @@ import za.co.dubedivine.networks.model.shared.QuestionBase;
 import java.util.List;
 
 @JsonInclude(value = JsonInclude.Include.NON_NULL) // super handy dwag for non-null values!!!!
-@Document(indexName = "divine", type = "questions", refreshInterval = "-1")
+@Document(indexName = "peerlink", type = "question", refreshInterval = "-1")
 public class ElasticQuestion extends QuestionBase {
 
 
