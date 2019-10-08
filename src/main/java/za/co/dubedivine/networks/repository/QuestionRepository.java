@@ -6,6 +6,8 @@ import za.co.dubedivine.networks.model.Question;
 
 import java.util.List;
 
+//PAGING AND SORTABLE REPOSITORY
+
 @Repository
 public interface QuestionRepository extends MongoRepository<Question, String> {
 //  @Query("question.find({\"tags.name\": \"?0\")")

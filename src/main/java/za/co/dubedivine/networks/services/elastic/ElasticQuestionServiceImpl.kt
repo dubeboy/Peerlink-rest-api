@@ -7,6 +7,7 @@ import org.elasticsearch.index.query.QueryBuilders.*
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.elasticsearch.core.ElasticsearchTemplate
+import org.springframework.data.elasticsearch.core.aggregation.AggregatedPage
 import org.springframework.data.elasticsearch.core.query.NativeSearchQueryBuilder
 import org.springframework.data.elasticsearch.core.query.SearchQuery
 import org.springframework.stereotype.Service
@@ -27,29 +28,36 @@ class ElasticQuestionServiceImpl(private val elasticQRepo: ElasticQRepo,
     }
 
     override fun search(q: String): List<ElasticQuestion> {
-        val queryBuilder = QueryBuilders
-                .boolQuery()
-                .should(
-                        QueryBuilders
-                                .queryStringQuery(q)
-                                .lenient(true)
-                                .field("title")
-                                .field("body")
-                                .fuzziness(Fuzziness.AUTO))
-//                .should(QueryBuilders.queryStringQuery("*$q*")
-//                        .lenient(true)
-//                        .field("name")
-//                        .field("body")
-//                )
-        val build = NativeSearchQueryBuilder().withQuery(queryBuilder).build()
-        return elasticsearchTemplate.queryForList(build, ElasticQuestion::class.java)
+        return searchForQuestions(q).content
     }
 
-    private fun generateBoostValueFromString(string: String): Float {
-        return if (string.isEmpty()) 0F else 1f
+    private fun searchForQuestions(query: String): AggregatedPage<ElasticQuestion> {
+        val searchQuery: SearchQuery = NativeSearchQueryBuilder()
+                .withQuery(QueryBuilders.boolQuery()
+                        .must(
+                                multiMatchQuery(query, "title^3", "body^2.5")
+                                        .fuzziness(Fuzziness.TWO) // value type is Any because AUTO or any numerical value
+                                        .prefixLength(0)
+                                        .maxExpansions(100)
+//                                .autoGenerateSynonymsPhraseQuery(true)
+                                        .boost(1.0F)
+                        )
+                )
+                .withPageable(PageRequest.of(0, 5))
+                .build()
+        return elasticsearchTemplate.queryForPage(searchQuery, ElasticQuestion::class.java)
     }
 
-    private fun searchForQuestions(query: String,  tag: String, page: Int = 0, tag1: String = "", tag2: String="", tag3: String=""): Page<ElasticQuestion> {
+    private fun createBodySearchNativeQuery() {
+        TODO("TOBE implemented")
+    }
+
+    private fun searchForQuestionsWithTags(query: String,
+                                           tag: String,
+                                           page: Int = 0,
+                                           tag1: String = "",
+                                           tag2: String="",
+                                           tag3: String=""): Page<ElasticQuestion> {
 //        FunctionScoreQuery.ScoreMode.AVG
         val searchQuery: SearchQuery = NativeSearchQueryBuilder()
                 .withQuery(QueryBuilders.boolQuery()
@@ -62,8 +70,8 @@ class ElasticQuestionServiceImpl(private val elasticQRepo: ElasticQRepo,
                                         .boost(1.0F)
                         )
                 ).withFilter(
-                        QueryBuilders.nestedQuery("tags",
-                               boolQuery()
+                        nestedQuery("tags",
+                                boolQuery()
                                         .should(matchQuery("tags.name", tag).boost(generateBoostValueFromString(tag)))
                                         .should(matchQuery("tags.name", tag1).boost(generateBoostValueFromString(tag1)))
                                         .should(matchQuery("tags.name", tag2).boost(generateBoostValueFromString(tag2)))
@@ -74,8 +82,7 @@ class ElasticQuestionServiceImpl(private val elasticQRepo: ElasticQRepo,
                 .withPageable(PageRequest.of(page, 10))
                 .build()
 
-        val questions: Page<ElasticQuestion> = elasticsearchTemplate.queryForPage(searchQuery, ElasticQuestion::class.java)
-        return questions
+        return elasticsearchTemplate.queryForPage(searchQuery, ElasticQuestion::class.java)
     }
 
     private fun searchForTags(partiallyCompletedTag: String): Page<ElasticTag> {
@@ -126,8 +133,8 @@ class ElasticQuestionServiceImpl(private val elasticQRepo: ElasticQRepo,
         return elasticsearchTemplate.queryForList(build, ElasticQuestion::class.java)
     }
 
-    override fun save(question: ElasticQuestion): ElasticQuestion {
-        return elasticQRepo.save(question)
+    override fun save(book: ElasticQuestion): ElasticQuestion {
+        return elasticQRepo.save(book)
     }
 
     override fun delete(question: ElasticQuestion) {
@@ -151,5 +158,9 @@ class ElasticQuestionServiceImpl(private val elasticQRepo: ElasticQRepo,
         eQ.video = question.video
         eQ.user = question.user
         return elasticQRepo.save(eQ)
+    }
+
+    private fun generateBoostValueFromString(string: String): Float {
+        return if (string.isEmpty()) 0F else 1f
     }
 }

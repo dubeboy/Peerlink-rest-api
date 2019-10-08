@@ -257,3 +257,77 @@ GET peerlink/_search
     }
   }
 }
+
+
+--- mod
+
+GET peerlink/_search
+{
+  "query": {
+    "bool": {
+      "must": {
+                "multi_match": {
+                    "query": "We doing magnets",
+
+                    "fields": [
+                        "title^3",
+                        "body^2.5"
+                    ],
+                    "fuzziness" : "2",
+                    "prefix_length" : 0,
+                    "max_expansions": 100,
+                    "boost" :         1.0
+                }
+      },
+      "filter": {
+        "nested" : {
+            "path" : "tags",
+            "query" : {
+                       "bool": {
+          "should": [
+            {
+              "match": {
+                "tags.name": {
+                  "query": "",
+                  "boost": 0
+                }
+              }
+            },
+            {
+               "match": {
+                "tags.name": ""
+              }
+            },
+            {
+               "match": {
+                "tags.name": ""
+              }
+            }
+          ]
+        }
+            },
+            "score_mode" : "max"
+        }
+      }
+    }
+  }
+}
+
+private fun oldQuery(q: String): MutableList<ElasticQuestion>? {
+        val queryBuilder = QueryBuilders
+                .boolQuery()
+                .should(
+                        QueryBuilders
+                                .queryStringQuery(q)
+                                .lenient(true)
+                                .field("title")
+                                .field("body")
+                                .fuzziness(Fuzziness.AUTO))
+//                .should(QueryBuilders.queryStringQuery("*$q*")
+//                        .lenient(true)
+//                        .field("name")
+//                        .field("body")
+//                )
+        val build = NativeSearchQueryBuilder().withQuery(queryBuilder).build()
+        return elasticsearchTemplate.queryForList(build, ElasticQuestion::class.java)
+    }
