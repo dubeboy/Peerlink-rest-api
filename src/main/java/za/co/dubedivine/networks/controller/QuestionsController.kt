@@ -2,16 +2,10 @@ package za.co.dubedivine.networks.controller
 
 import com.mongodb.BasicDBObject
 import com.mongodb.client.gridfs.model.GridFSFile
-import org.apache.lucene.search.join.ScoreMode
-import org.elasticsearch.common.lucene.search.function.FunctionScoreQuery
-import org.elasticsearch.index.query.QueryBuilders.*
 import org.springframework.context.annotation.AnnotationConfigApplicationContext
 import org.springframework.core.io.InputStreamResource
 import org.springframework.core.io.Resource
-import org.springframework.data.domain.Page
 import org.springframework.data.domain.Sort
-import org.springframework.data.elasticsearch.core.query.NativeSearchQueryBuilder
-import org.springframework.data.elasticsearch.core.query.SearchQuery
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.gridfs.GridFsOperations
@@ -218,18 +212,16 @@ class QuestionsController(private val repository: QuestionRepository,
         } else {
             println("in 2nd phase")
             val (purifiedTitle, tags) = KUtils.getCleanTextAndTags(searchText)
-            val list: MutableList<ElasticQuestion> = mutableListOf()
-            println("the purified text is $purifiedTitle")
+            println("the purified tags is $purifiedTitle")
             println("there are ${tags.size} tags so looping ")
-            tags.forEachIndexed { index, tag ->
-                println("loop $index")
-                val elasticQuestions = elasticQuestionService.searchWithQuestionTag(purifiedTitle, tag)  //todo: should use Rx
-                println("the list is $elasticQuestions")
-                list.addAll(elasticQuestions)
-            }
-            val set = list.toSet()
-            println("the returned result is $set")
-            return set
+
+            var tag = getTag(tags, 0)
+            var tag1 = getTag(tags, 1)
+            var tag2 = getTag(tags, 2)
+            var tag3 = getTag(tags, 3)
+
+            val elasticQuestions = elasticQuestionService.searchWithQuestionTag(purifiedTitle, tag, tag1, tag2, tag3)
+            return  elasticQuestions.toSet()
         }
     }
 
@@ -319,4 +311,7 @@ class QuestionsController(private val repository: QuestionRepository,
         }
     }
 
+    private fun getTag(tags: Set<String>, index: Int): String {
+        return try { tags.elementAt(index) } catch (iob: IndexOutOfBoundsException) { "" }
+    }
 }

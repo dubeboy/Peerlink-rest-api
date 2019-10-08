@@ -331,3 +331,25 @@ private fun oldQuery(q: String): MutableList<ElasticQuestion>? {
         val build = NativeSearchQueryBuilder().withQuery(queryBuilder).build()
         return elasticsearchTemplate.queryForList(build, ElasticQuestion::class.java)
     }
+
+
+    {
+      "query": {
+        "bool": {
+          "must": {
+                    "multi_match": {
+                        "query": "We doing mnet",
+
+                        "fields": [
+                            "title^3",
+                            "body^2.5"
+                        ],
+                        "fuzziness" : "2",
+                        "prefix_length" : 0,
+                        "max_expansions": 100,
+                        "boost" :         1.0
+                    }
+          }
+        }
+      }
+    }

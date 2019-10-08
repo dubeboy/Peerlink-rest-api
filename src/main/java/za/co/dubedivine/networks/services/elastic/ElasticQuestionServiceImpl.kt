@@ -32,105 +32,22 @@ class ElasticQuestionServiceImpl(private val elasticQRepo: ElasticQRepo,
     }
 
     private fun searchForQuestions(query: String): AggregatedPage<ElasticQuestion> {
-        val searchQuery: SearchQuery = NativeSearchQueryBuilder()
-                .withQuery(QueryBuilders.boolQuery()
-                        .must(
-                                multiMatchQuery(query, "title^3", "body^2.5")
-                                        .fuzziness(Fuzziness.TWO) // value type is Any because AUTO or any numerical value
-                                        .prefixLength(0)
-                                        .maxExpansions(100)
-//                                .autoGenerateSynonymsPhraseQuery(true)
-                                        .boost(1.0F)
-                        )
-                )
+        val searchQuery: SearchQuery = createBodySearchNativeQuery(query)
                 .withPageable(PageRequest.of(0, 5))
                 .build()
         return elasticsearchTemplate.queryForPage(searchQuery, ElasticQuestion::class.java)
     }
 
-    private fun createBodySearchNativeQuery() {
-        TODO("TOBE implemented")
-    }
-
-    private fun searchForQuestionsWithTags(query: String,
-                                           tag: String,
-                                           page: Int = 0,
-                                           tag1: String = "",
-                                           tag2: String="",
-                                           tag3: String=""): Page<ElasticQuestion> {
-//        FunctionScoreQuery.ScoreMode.AVG
-        val searchQuery: SearchQuery = NativeSearchQueryBuilder()
-                .withQuery(QueryBuilders.boolQuery()
-                        .must(
-                                multiMatchQuery(query, "title^3", "body^2.5")
-                                        .fuzziness(Fuzziness.TWO) // value type is Any because AUTO or any numerical value
-                                        .prefixLength(0)
-                                        .maxExpansions(100)
-//                                .autoGenerateSynonymsPhraseQuery(true)
-                                        .boost(1.0F)
-                        )
-                ).withFilter(
-                        nestedQuery("tags",
-                                boolQuery()
-                                        .should(matchQuery("tags.name", tag).boost(generateBoostValueFromString(tag)))
-                                        .should(matchQuery("tags.name", tag1).boost(generateBoostValueFromString(tag1)))
-                                        .should(matchQuery("tags.name", tag2).boost(generateBoostValueFromString(tag2)))
-                                        .should(matchQuery("tags.name", tag3).boost(generateBoostValueFromString(tag3))),
-                                ScoreMode.Avg
-                        )
-                )
-                .withPageable(PageRequest.of(page, 10))
-                .build()
-
-        return elasticsearchTemplate.queryForPage(searchQuery, ElasticQuestion::class.java)
-    }
-
-    private fun searchForTags(partiallyCompletedTag: String): Page<ElasticTag> {
-        val searchQuery: SearchQuery = NativeSearchQueryBuilder()
-                .withQuery(
-                        nestedQuery(
-                                "tags",
-                                fuzzyQuery("tags.name", partiallyCompletedTag)
-                                        .boost(1F)
-                                        .prefixLength(0)
-                                        .maxExpansions(100)
-                                        .fuzziness(Fuzziness.TWO),
-                                ScoreMode.Avg
-                        )
-                )
-                .withPageable(PageRequest.of(0, 5))
-                .build()
-        val tags: Page<ElasticTag> = elasticsearchTemplate.queryForPage(searchQuery, ElasticTag::class.java)
-        return tags
-    }
 
 
-    override fun searchWithQuestionTag(title: String, tagName: String): List<ElasticQuestion> {
+    override fun searchWithQuestionTag(query: String, tag: String, tag1: String, tag2: String, tag3: String): List<ElasticQuestion> {
 
         println("starting with ###################")
-        println("the tags is: $tagName")
-        println("the title: $title")
+        println("the tags is: $tag")
+        println("the query: $query")
         println("starting with ###################")
-        //todo: need to find way to query based on child element
-        val queryBuilder = QueryBuilders
-                .boolQuery()
-                .should(
-                        QueryBuilders
-                                .queryStringQuery(title)
-                                .lenient(true)
-                                .field("title")
-                                .field("body"))
-                .should(QueryBuilders.queryStringQuery("*$title*")  // wild card matching
-                        .lenient(true)
-                        .field("name")
-                        .field("body")
-                )
-                .must(QueryBuilders.nestedQuery("tags",
-                        QueryBuilders.termQuery("tags.name", tagName), ScoreMode.Avg)
-                ) //todo: i should be able to query child elements
-        val build = NativeSearchQueryBuilder().withQuery(queryBuilder).build()
-        //elasticQRepo.findByTitleAndBodyAndTagsName(title, tagName);
-        return elasticsearchTemplate.queryForList(build, ElasticQuestion::class.java)
+
+        return searchForQuestionsWithTags(query, tag, tag1, tag2, tag3).content
     }
 
     override fun save(book: ElasticQuestion): ElasticQuestion {
@@ -162,5 +79,64 @@ class ElasticQuestionServiceImpl(private val elasticQRepo: ElasticQRepo,
 
     private fun generateBoostValueFromString(string: String): Float {
         return if (string.isEmpty()) 0F else 1f
+    }
+
+    private fun createBodySearchNativeQuery(query: String): NativeSearchQueryBuilder {
+        return  NativeSearchQueryBuilder()
+                .withQuery(QueryBuilders.boolQuery()
+                        .must(
+                                multiMatchQuery(query)
+                                        .field("title", 3F)
+                                        .field("body", 2.5F)
+                                        .fuzziness(Fuzziness.TWO) // value type is Any because AUTO or any numerical value
+                                        .prefixLength(0)
+                                        .maxExpansions(100)
+                                        .boost(1.0F)
+                        )
+                )
+    }
+
+
+    private fun searchForTags(partiallyCompletedTag: String): Page<ElasticTag> {
+        val searchQuery: SearchQuery = NativeSearchQueryBuilder()
+                .withQuery(
+                        nestedQuery(
+                                "tags",
+                                fuzzyQuery("tags.name", partiallyCompletedTag)
+                                        .boost(1F)
+                                        .prefixLength(0)
+                                        .maxExpansions(100)
+                                        .fuzziness(Fuzziness.TWO),
+                                ScoreMode.Avg
+                        )
+                )
+                .withPageable(PageRequest.of(0, 5))
+                .build()
+        val tags: Page<ElasticTag> = elasticsearchTemplate.queryForPage(searchQuery, ElasticTag::class.java)
+        return tags
+    }
+
+    private fun searchForQuestionsWithTags(query: String,
+                                           tag: String,
+                                           tag1: String = "",
+                                           tag2: String="",
+                                           tag3: String="",
+                                           page: Int = 0): AggregatedPage<ElasticQuestion> {
+//        FunctionScoreQuery.ScoreMode.AVG
+        val searchQuery: SearchQuery = createBodySearchNativeQuery(query)
+                .withFilter(
+                        nestedQuery("tags",
+                                boolQuery()
+                                        .should(matchQuery("tags.name", tag).boost(generateBoostValueFromString(tag)))
+                                        .should(matchQuery("tags.name", tag1).boost(generateBoostValueFromString(tag1)))
+                                        .should(matchQuery("tags.name", tag2).boost(generateBoostValueFromString(tag2)))
+                                        .should(matchQuery("tags.name", tag3).boost(generateBoostValueFromString(tag3))),
+                                ScoreMode.Avg
+                        )
+                )
+                .withPageable(PageRequest.of(page, 10))
+                .build()
+
+        return elasticsearchTemplate.queryForPage(searchQuery, ElasticQuestion::class.java)
     }
 }

@@ -32,6 +32,11 @@ class DBHelper(private val questionRepository: QuestionRepository,
     @Throws(Exception::class)
     override fun run(vararg strings: String) {
 
+       elasticTagRepo.deleteAll()
+       println("deleting all the available content in the elastic database")
+       elasticQuestionService.deleteAll()
+       questionRepository.deleteAll()
+       userRepository.deleteAll()
        val user =  userRepository.save(User("DDD", "sss@msms.com", null))
 
         val questionA =
@@ -75,12 +80,8 @@ class DBHelper(private val questionRepository: QuestionRepository,
             saveAll(arrayListOf(questionA, questionB))
         }
 
-        userRepository.deleteAll()
         voteEntityBridgeRepo.save(VoteEntityBridge(Pair(savedQuestions[0].id, user.id ), true))
 
-        println("deleting all the available content in the elastic database")
-        questionRepository.deleteAll()
-        elasticQuestionService.deleteAll()
         elasticSearchOperations.refresh(ElasticQuestion::class.java)
         savedQuestions.forEach {
             val el = ElasticQuestion(it.title, it.body, it.votes, it.tags, it.type)
@@ -89,7 +90,6 @@ class DBHelper(private val questionRepository: QuestionRepository,
             el.id = it.id
             elasticQuestionService.save(el)
         }
-        elasticTagRepo.deleteAll()
         elasticTagRepo.saveAll(arrayListOf(ElasticTag("phy1a"), ElasticTag("etn1b")))
     }
 }

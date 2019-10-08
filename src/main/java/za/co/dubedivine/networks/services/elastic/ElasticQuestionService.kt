@@ -15,7 +15,7 @@ interface ElasticQuestionService {
 
     fun search(q: String): List<ElasticQuestion>
 
-    fun searchWithQuestionTag(title: String, tagName: String): List<ElasticQuestion>
+    fun searchWithQuestionTag(query: String, tag: String, tag1: String, tag2: String, tag3: String): List<ElasticQuestion>
 
     fun suggestQuestion(tile: String): List<ElasticQuestion>
 
