@@ -75,7 +75,7 @@ object KUtils {
         return p.toRegex().containsMatchIn(text)
     }
 
-    private fun getPattern(): Pattern = Pattern.compile(KUtils.HASH_TAGS_REGEX)
+    private fun getPattern(): Pattern = Pattern.compile(HASH_TAGS_REGEX)
 
 
     // I think I was drunk here

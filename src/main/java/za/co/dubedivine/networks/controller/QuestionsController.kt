@@ -206,21 +206,22 @@ class QuestionsController(private val repository: QuestionRepository,
         println("the search term is $searchText")
         if (!KUtils.hasTags(searchText)) {
             println("in 1st phase ")
-            val result = elasticQuestionService.search(searchText).toSet()
+            val result = elasticQuestionService.search(searchText.trim()).toSet()
             println("the returned result is $result")
             return result
         } else {
+            println("-------------")
             println("in 2nd phase")
             val (purifiedTitle, tags) = KUtils.getCleanTextAndTags(searchText)
             println("the purified tags is $purifiedTitle")
             println("there are ${tags.size} tags so looping ")
 
-            var tag = getTag(tags, 0)
-            var tag1 = getTag(tags, 1)
-            var tag2 = getTag(tags, 2)
-            var tag3 = getTag(tags, 3)
+            val tag = getTag(tags, 0)
+            val tag1 = getTag(tags, 1)
+            val tag2 = getTag(tags, 2)
+            val tag3 = getTag(tags, 3)
 
-            val elasticQuestions = elasticQuestionService.searchWithQuestionTag(purifiedTitle, tag, tag1, tag2, tag3)
+            val elasticQuestions = elasticQuestionService.searchWithQuestionTag(purifiedTitle.trim(), tag, tag1, tag2, tag3)
             return  elasticQuestions.toSet()
         }
     }
@@ -312,6 +313,6 @@ class QuestionsController(private val repository: QuestionRepository,
     }
 
     private fun getTag(tags: Set<String>, index: Int): String {
-        return try { tags.elementAt(index) } catch (iob: IndexOutOfBoundsException) { "" }
+        return tags.elementAtOrElse(index) {""}
     }
 }
