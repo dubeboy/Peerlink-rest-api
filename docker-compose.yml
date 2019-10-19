@@ -1,0 +1,32 @@
+version: '3'
+services:
+  mongodb:
+    image: mongo:4.0.3
+    container_name: my-mongo-container2
+    ports:
+      - 27017:27017
+    command: --smallfiles   # what does this do
+  mongo-client:
+    image: mongoclient/mongoclient
+    ports:
+      - 3000:3000
+    environment:
+      - MONGOCLIENT_DEFAULT_CONNECTION_URL=mongodb://mongo:27017
+    links:
+      - mongodb
+  elasticsearchdb:
+    image: elasticsearch:5.6.16
+    container_name: my-elasticsearch-container2
+  app:
+    container_name: peerlink-rest-app
+    build:
+      context: .
+      dockerfile: Dockerfile
+    links:
+      - mongodb
+      - elasticsearchdb
+    depends_on:
+      - mongodb
+      - elasticsearchdb
+    expose:
+      - 8080:8080

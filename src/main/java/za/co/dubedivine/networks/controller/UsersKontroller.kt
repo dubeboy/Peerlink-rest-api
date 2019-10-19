@@ -18,6 +18,7 @@ class UsersKontroller(private val userRepository: UserRepository,
 
     @PostMapping
     fun signIn(@RequestBody user: User): ResponseEntity<StatusResponseEntity<User>> {
+
         if (userRepository.existsByEmail(user.email)) {
             return ResponseEntity(StatusResponseEntity(true,
                     "User Exits", userRepository.findByEmail(user.email)),

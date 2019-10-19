@@ -39,7 +39,7 @@ class ElasticsearchConfiguration {
                 .build()
 
         //https://www.elastic.co/guide/en/elasticsearch/guide/current/_transport_client_versus_node_client.html
-        val client: TransportClient = PreBuiltTransportClient(esSettings)
+        val client = PreBuiltTransportClient(esSettings)
         client.addTransportAddress(TransportAddress(InetAddress.getByName(esHost), esPort))
         return client
     }

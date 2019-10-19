@@ -1,6 +1,5 @@
 package za.co.dubedivine.networks.model;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.index.Indexed;
@@ -24,10 +23,9 @@ public class User {
     @JsonProperty("photo_url")
     private String photoUrl;
     private String degree;
-    @JsonIgnore
     private Set<String> modules;
     @Indexed
-    @JsonIgnore
+    @JsonProperty
     private List<Tag> tags = new ArrayList<>();
     private String fcmToken;
 
