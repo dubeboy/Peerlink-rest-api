@@ -1,32 +1,42 @@
 version: '3'
 services:
-  mongodb:
+  mongodb1:
     image: mongo:4.0.3
-    container_name: my-mongo-container2
+    container_name: mogodb-container
+    networks:
+      - spring-cloud-network
     ports:
       - 27017:27017
-    command: --smallfiles   # what does this do
   mongo-client:
     image: mongoclient/mongoclient
     ports:
       - 3000:3000
+    networks:
+      - spring-cloud-network
     environment:
       - MONGOCLIENT_DEFAULT_CONNECTION_URL=mongodb://mongo:27017
     links:
-      - mongodb
+      - mongodb1
   elasticsearchdb:
     image: elasticsearch:5.6.16
-    container_name: my-elasticsearch-container2
+    container_name: elasticsearch-container
   app:
     container_name: peerlink-rest-app
     build:
       context: .
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.api
     links:
-      - mongodb
-      - elasticsearchdb
-    depends_on:
-      - mongodb
+      - mongodb1
       - elasticsearchdb
     expose:
+      - 8080
+    networks:
+      - spring-cloud-network
+    ports:
       - 8080:8080
+    entrypoint: "java -Djava.security.egd=file:/dev/./urandom -Dspring.profiles.active=prod -jar /app.jar"
+#    environment:
+#      - "SPRING_PROFILES_ACTIVE=prod"
+networks:
+  spring-cloud-network:
+    driver: bridge
