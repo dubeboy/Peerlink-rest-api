@@ -1,0 +1,22 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: elasticsearchdb
+  name: elasticsearchdb
+spec:
+  replicas: 1
+  selector:
+    app: peerlink-rest
+  template:
+    metadata:
+      labels:
+        app: elasticsearchdb
+    spec:
+      containers:
+      - image: elasticsearch:5.6.16
+        name: elasticsearch-container
+        resources:
+          requests:
+            cpu: 100m
+            memory: 100Mi

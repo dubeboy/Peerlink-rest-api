@@ -3,14 +3,11 @@ kind: Service
 metadata:
   labels:
     app: mongodb1
-    role: database
-    tier: backend
   name: mongodb1
 spec:
   ports:
   - port: 27017
     targetPort: 27017
   selector:
-    app: mongodb1
-    role: database
-    tier: backend
+    app: peerlink-rest
+# TODO make this service serve the elastic search and mongo db at the same time using ports attributes

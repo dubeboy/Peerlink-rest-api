@@ -23,7 +23,7 @@ services:
   app:
     container_name: peerlink-rest-app
     build:
-      context: .
+      context: ..
       dockerfile: Dockerfile.api
     links:
       - mongodb1

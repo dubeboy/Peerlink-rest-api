@@ -1,0 +1,26 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: peerlink-rest
+  name: peerlink-restapp
+spec:
+  replicas: 1
+  selector:
+    app: peerlink-rest
+  template:
+    metadata:
+      labels:
+        app: elasticsearchdb
+    spec:
+      containers:
+      - command:
+        - java
+        - -Djava.security.egd=file:/dev/./urandom
+        - -Dspring.profiles.active=prod
+        - -jar
+        - /app.jar
+        image: app
+        name: peerlink-rest-app
+        ports:
+        - containerPort: 8080
