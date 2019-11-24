@@ -2,4 +2,4 @@
 
 ./mvnw -Dmaven.test.skip=true package
 
-docker-compose up
+docker-compose build
