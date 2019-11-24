@@ -22,8 +22,9 @@ services:
     container_name: elasticsearch-container
   app:
     container_name: peerlink-rest-app
+    image: gcr.io/peerlink-d475c/peerlink-rest-api:v1
     build:
-      context: ""
+      context: .
       dockerfile: Dockerfile.api
     links:
       - mongodb1
