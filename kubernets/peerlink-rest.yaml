@@ -1,0 +1,21 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: peerlink-rest
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: peerlink-rest
+  template:
+    metadata:
+      labels:
+        app: peerlink-rest
+    spec:
+      containers:
+        - name: peerlink-rest
+          image: divine33/peerlink-rest:v0.0.1
+
+          env:
+            - name: SPRING_PROFILES_ACTIVE
+              value: production-microservice

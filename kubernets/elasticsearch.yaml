@@ -5,7 +5,7 @@ metadata:
 spec:
   clusterIP: None
   selector:
-    app: es-cluster
+    app: elasticsearch
   ports:
     - name: transport
       port: 9300
@@ -18,7 +18,7 @@ metadata:
   name: elasticsearch-loadbalancer
 spec:
   selector:
-    app: es-cluster
+    app: elasticsearch
   ports:
     - name: http
       port: 80
@@ -53,10 +53,13 @@ spec:
   replicas: 2
   updateStrategy:
     type: RollingUpdate
+  selector:
+    matchLabels:
+      app: elasticsearch
   template:
     metadata:
       labels:
-        app: es-cluster
+        app: elasticsearch
     spec:
       securityContext:
         fsGroup: 1000
@@ -79,7 +82,7 @@ spec:
               add:
                 - IPC_LOCK
                 - SYS_RESOURCE
-          image: docker.elastic.co/elasticsearch/elasticsearch:6.5.0
+          image: docker.elastic.co/elasticsearch/elasticsearch:6.2.2
           env:
             - name: ES_JAVA_OPTS
               valueFrom:
@@ -118,4 +121,98 @@ spec:
         resources:
           requests:
             storage: 5Gi
-  selector:
+
+#kind: Service
+#apiVersion: v1
+#metadata:
+#  name: elasticsearch
+#  labels:
+#    app: elasticsearch
+#spec:
+#  selector:
+#    app: elasticsearch
+#  clusterIP: None
+#  ports:
+#    - port: 9200
+#      name: rest
+#    - port: 9300
+#      name: inter-node
+#
+#---
+#
+#apiVersion: apps/v1
+#kind: StatefulSet
+#metadata:
+#  name: es-cluster
+#spec:
+#  serviceName: elasticsearch
+#  replicas: 3
+#  selector:
+#    matchLabels:
+#      app: elasticsearch
+#  template:
+#    metadata:
+#      labels:
+#        app: elasticsearch
+#    spec:
+#      containers:
+#        - name: elasticsearch
+#          image: docker.elastic.co/elasticsearch/elasticsearch-oss:6.4.3
+#          resources:
+#            limits:
+#              cpu: 1000m
+#            requests:
+#              cpu: 100m
+#          env:
+#            - name: ES_JAVA_OPTS
+#              valueFrom:
+#                configMapKeyRef:
+#                  name: es-config
+#                  key: ES_JAVA_OPTS
+#          readinessProbe:
+#            httpGet:
+#              scheme: HTTP
+#              path: /_cluster/health?local=true
+#              port: 9200
+#            initialDelaySeconds: 5
+#          ports:
+#            - containerPort: 9200
+#              name: es-http
+#            - containerPort: 9300
+#              name: es-transport
+#          volumeMounts:
+#            - name: es-data
+#              mountPath: /usr/share/elasticsearch/data
+#            - name: elasticsearch-config
+#              mountPath: /usr/share/elasticsearch/config/elasticsearch.yml
+#              subPath: elasticsearch.yml
+#      initContainers:
+#        - name: fix-permissions
+#          image: busybox
+#          command: ["sh", "-c", "chown -R 1000:1000 /usr/share/elasticsearch/data"]
+#          securityContext:
+#            privileged: true
+#          volumeMounts:
+#            - name: data
+#              mountPath: /usr/share/elasticsearch/data
+#        - name: increase-vm-max-map
+#          image: busybox
+#          command: ["sysctl", "-w", "vm.max_map_count=262144"]
+#          securityContext:
+#            privileged: true
+#        - name: increase-fd-ulimit
+#          image: busybox
+#          command: ["sh", "-c", "ulimit -n 65536"]
+#          securityContext:
+#            privileged: true
+#  volumeClaimTemplates:
+#    - metadata:
+#        name: data
+#        labels:
+#          app: elasticsearch
+#      spec:
+#        accessModes: [ "ReadWriteOnce" ]
+#        storageClassName: px-ha-sc
+#        resources:
+#          requests:
+#            storage: 10Gi
