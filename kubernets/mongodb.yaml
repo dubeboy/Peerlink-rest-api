@@ -1,0 +1,41 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mongodb
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mongodb
+  template:
+    metadata:
+      labels:
+        app: mongodb
+    spec:
+      containers:
+        - name: mongodb
+          image: mongo:4.0.17-xenial
+          volumeMounts:
+            - name: mongo-persistent-storage
+              mountPath: /data/db
+      volumes:
+        - name: mongo-persistent-storage
+          persistentVolumeClaim:
+            claimName: mongo-pvc
+
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: peerlink-mongodb
+spec:
+  selector:
+    app: mongodb
+
+  ports:
+    - name: mongoport
+      port: 27017
+
+  type: ClusterIP

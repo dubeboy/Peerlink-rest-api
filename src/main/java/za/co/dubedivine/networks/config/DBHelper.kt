@@ -1,5 +1,5 @@
-//package za.co.dubedivine.networks.config
-//
+package za.co.dubedivine.networks.config
+
 //import org.springframework.boot.CommandLineRunner
 //import org.springframework.data.elasticsearch.core.ElasticsearchOperations
 //import org.springframework.stereotype.Component
