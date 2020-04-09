@@ -1,29 +1,18 @@
-apiVersion: v1
 kind: Service
-metadata:
-  name: elasticsearch-cluster
-spec:
-  clusterIP: None
-  selector:
-    app: elasticsearch
-  ports:
-    - name: transport
-      port: 9300
-
----
-
 apiVersion: v1
-kind: Service
 metadata:
-  name: elasticsearch-loadbalancer
+ name: elasticsearch
+ labels:
+   app: elasticsearch
 spec:
-  selector:
-    app: elasticsearch
-  ports:
-    - name: http
-      port: 80
-      targetPort: 9200
-  type: LoadBalancer
+ selector:
+   app: elasticsearch
+ clusterIP: None
+ ports:
+   - port: 9200
+     name: rest
+   - port: 9300
+     name: inter-node
 
 ---
 
@@ -48,19 +37,19 @@ apiVersion: apps/v1
 kind: StatefulSet
 metadata:
   name: esnode
-spec:
+spec: #  spec 1
   serviceName: elasticsearch
   replicas: 2
   updateStrategy:
     type: RollingUpdate
   selector:
     matchLabels:
-      app: elasticsearch
+      app: elasticsearch  # has to match .spec.template.metadata.labels
   template:
     metadata:
       labels:
-        app: elasticsearch
-    spec:
+        app: elasticsearch # has to match .spec.selector.matchLabels
+    spec:  # spec 2
       securityContext:
         fsGroup: 1000
       initContainers:
